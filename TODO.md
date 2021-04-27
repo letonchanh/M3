@@ -7,6 +7,7 @@
 
 - [ ] Transformation from MBA expressions to programs with CIL (Chanh)
 - [ ] Dynamic analysis with Dig (Chanh)
+- [ ] Result validation with SMT solvers, refinement with counterexamples (Chanh)
 
 # Related work
 
