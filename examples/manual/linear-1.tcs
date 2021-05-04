@@ -1,0 +1,21 @@
+vtrace1: I x, I y, I xANDy, I e
+vtrace1: 0, 7, 0, -22
+vtrace1: 6, 7, 6, -4
+vtrace1: 2, 6, 2, -13
+vtrace1: 0, 2, 0, -7
+vtrace1: 2, 5, 0, -22
+vtrace1: 0, 8, 0, -25
+vtrace1: 8, 6, 0, -43
+vtrace1: 3, 5, 1, -19
+vtrace1: 9, 8, 8, -4
+vtrace1: 4, 4, 4, -1
+vtrace1: 8, 9, 8, -4
+vtrace1: 9, 5, 1, -37
+vtrace1: 5, 4, 4, -4
+vtrace1: 0, 6, 0, -19
+vtrace1: 6, 8, 0, -43
+vtrace1: 8, 8, 8, -1
+vtrace1: 5, 4, 4, -4
+vtrace1: 7, 7, 7, -1
+vtrace1: 2, 0, 0, -7
+vtrace1: 1, 4, 0, -16
