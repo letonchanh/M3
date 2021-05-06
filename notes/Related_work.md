@@ -30,4 +30,6 @@ In summary, the simplification algorithm works for linear MBA expressions, if th
 
 
 
-## USENIX'21
+## USENIX'21 MBA-Blast: Unveiling and Simplifying Mixed Boolean-Arithmetic Obfuscation
+- New finding: "If an MBA identity exists in integer space, then it must also hold in 1-bit space".
+
