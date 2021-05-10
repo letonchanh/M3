@@ -265,5 +265,7 @@ let mkUk
     mkCall "klee_assume" [BinOp(Le, Lval lv, maxE, boolTyp)] in
   	      
   (vi, [mkSymInstr; klee_assert_lb; klee_assert_ub])
+
+let subset vs = failwith ("To be implemented")
 	   
     
