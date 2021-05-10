@@ -39,7 +39,8 @@ let () =
     let _ = 
       try
         let lexbuf = Lexing.from_string mba_str in
-        let mba_expr = Mbaparser.mba_expr Mbalexer.tokenizer lexbuf in
+        let mba_exp = Mbaparser.mba_exp Mbalexer.tokenizer lexbuf in
+        let () = print_endline ("MBA: " ^ (Mba.string_of_exp mba_exp)) in
         ()
       with e ->
         let msg = Printexc.to_string e in
