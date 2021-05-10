@@ -34,3 +34,16 @@ In summary, the simplification algorithm works for linear MBA expressions, if th
 - New finding: "If an MBA identity exists in integer space, then it must also hold in 1-bit space".
 - New approach: Developing MBA simplification rules in 1-bit space and use them to simplify any n-bit complex MBA expressions.
 
+## MAB Obfucators
+
+- [Tigress](http://tigress.cs.arizona.edu/), encode arithmetic.
+- [Obfuscator-LLVM](https://github.com/obfuscator-llvm/obfuscator/wiki), instruction substitutions.
+
+#### Real-World MBA Malware Search
+- [VirusTotal](https://www.virustotal.com/gui/search/vmprotect/comments), search keywords, `vmprotect`.
+- [Rainsomware](https://www.virustotal.com/gui/file/e36b932f927eb78b142521d3ac9ed50b3c5b417a442644c2e5c3be3eaac40e4a/details), MBA expression over key K and a constant C as inputs.(Contact VirusTotal to download sample.) 
+
+## Dynamic Approach
+- [Syntia](https://github.com/RUB-SysSec/syntia), uses instruction traces as blackbox oracle -> I/O pairs.
+- [Triton](https://triton.quarkslab.com/), simplify expressions.
+- [Effectiveness of Synthesis in Concolic Deobfuscation](https://hal.inria.fr/hal-01241356v2/document)
