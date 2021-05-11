@@ -1,8 +1,8 @@
-In order to use `ocaml-lsp-server`:
+In order to use `ocaml-lsp-server` with `cil`:
 - ~~Install `4.06.0+default-unsafe-string` via `opam switch create 4.06.0+default-unsafe-string`~~
-- Compile OCaml 4.06.0 from source
+- ~~Compile OCaml 4.06.0 from source~~
   ```
-  git clone https://github.com/ocaml/ocaml
+  ~~git clone https://github.com/ocaml/ocaml~~
   cd ocaml
   git checkout 4.06.0
   ./configure -no-force-safe-string -default-unsafe-string
