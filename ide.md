@@ -1,5 +1,13 @@
 In order to use `ocaml-lsp-server`:
-- Install `4.06.0+default-unsafe-string` via `opam switch create 4.06.0+default-unsafe-string`
+- ~~Install `4.06.0+default-unsafe-string` via `opam switch create 4.06.0+default-unsafe-string`~~
+- Compile OCaml 4.06.0 from source
+  ```
+  git clone https://github.com/ocaml/ocaml
+  git checkout 4.06.0
+  ./configure -no-force-safe-string -default-unsafe-string
+  make world.opt
+  make install
+  ```
 - `opam install ocaml-lsp-server`
 - Install `ocaml-num` (https://github.com/ocaml/num)
   ```
