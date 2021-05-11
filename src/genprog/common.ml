@@ -10,7 +10,7 @@ let string_of_typ (s : typ) = Pretty.sprint ~width:80 (dn_type () s)
 let string_of_global (s : global) = Pretty.sprint ~width:80 (dn_global () s)
 let string_of_stmt (s : stmt) = Pretty.sprint ~width:80 (dn_stmt () s) 
 let string_of_exp (s : exp) = Pretty.sprint ~width:80 (dn_exp () s) 
-let string_of_instr (s : instr) = Pretty.sprint ~width:80 (dn_instr () s) 
+let string_of_instr (s : instr) = Pretty.sprint ~width:80 (dn_instr () s)
 let string_of_lv (s : lval) = Pretty.sprint ~width:80 (dn_lval () s)
 
 let const_exp_of_string (t : typ) (s : string) : exp = match t with
