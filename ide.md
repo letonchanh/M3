@@ -3,10 +3,12 @@ In order to use `ocaml-lsp-server`:
 - Compile OCaml 4.06.0 from source
   ```
   git clone https://github.com/ocaml/ocaml
+  cd ocaml
   git checkout 4.06.0
   ./configure -no-force-safe-string -default-unsafe-string
   make world.opt
   make install
+  opam switch create .
   ```
 - `opam install ocaml-lsp-server`
 - Install `ocaml-num` (https://github.com/ocaml/num)
