@@ -19,7 +19,7 @@ class add_mba_visitor mba_expr = object(self)
   method vfunc f =
     let action f : fundec =
       f.sbody.bstmts <- [self#create_mba_stmt mba_expr] @ f.sbody.bstmts;
-      f in 
+      f in
     ChangeDoChildrenPost(f, action)
 end
 
