@@ -1,13 +1,14 @@
 PKG cil
+FLG -rectypes
 
 S src/
 S src/*
 S src/*/*
 S src/*/*/*
-S ~/.opam/4.06.0+default-unsafe-string/lib
-S ~/.opam/4.06.0+default-unsafe-string/lib/*
-S ~/.opam/4.06.0+default-unsafe-string/lib/*/*
-S ~/.opam/4.06.0+default-unsafe-string/lib/*/*/*
+S ~/.opam/4.06.0/lib
+S ~/.opam/4.06.0/lib/*
+S ~/.opam/4.06.0/lib/*/*
+S ~/.opam/4.06.0/lib/*/*/*
 
 B _build/
 B _build/*

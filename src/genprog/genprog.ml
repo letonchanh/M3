@@ -26,10 +26,10 @@ end
 let () = 
   begin    
     initCIL();
-    Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
+    lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
     Cprint.printLn := false; (* don't print line *)
     (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
-    Cil.useLogicalOperators := true;
+    useLogicalOperators := true;
     Rmtmps.rmUnusedInlines := true;
 
     let template = "template.c" in
