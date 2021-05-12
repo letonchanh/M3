@@ -266,6 +266,12 @@ let mkUk
   	      
   (vi, [mkSymInstr; klee_assert_lb; klee_assert_ub])
 
-let subset vs = failwith ("To be implemented")
+let rec subset vs =
+  match vs with
+  | [] -> failwith "this is an empty set!"
+  | [a]-> [[a]]
+  | h :: ls -> let xs = subset ls in
+               let ys = List.map (fun l -> h :: l) xs in
+               [[h]] @ xs @ ys
 	   
     
