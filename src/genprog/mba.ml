@@ -1,3 +1,5 @@
+module CM = Common
+
 type bin_op =
   | Add
   | Sub
@@ -8,8 +10,8 @@ type bin_op =
   | Xor
 
 type unary_op =
+  | Not
   | Neg
-  | Minus
 
 type var = string
 
@@ -20,8 +22,8 @@ type exp =
   | BinExp of (bin_op * exp * exp)
 
 let string_of_unary_op = function
-  | Neg -> "~"
-  | Minus -> "-"
+  | Not -> "~"
+  | Neg -> "-"
 
 let string_of_bin_op = function
   | Add -> "+"
@@ -54,3 +56,26 @@ let rec vars_of_exp e =
   | IConst  _ -> []
   | UnaryExp (_, e) -> vars_of_exp e
   | BinExp (_, e1, e2) -> dedup_vs ((vars_of_exp e1) @ (vars_of_exp e2))
+
+let cil_of_unary_op = function
+  | Not -> Cil.BNot
+  | Neg -> Cil.Neg
+
+let cil_of_bin_op = function
+  | Add -> Cil.PlusA
+  | Sub -> Cil.MinusA
+  | Mul -> Cil.Mult
+  | Div -> Cil.Div
+  | And -> Cil.BAnd
+  | Or -> Cil.BOr
+  | Xor -> Cil.BXor
+
+let rec cil_of_exp get_vi e =
+  let trans = cil_of_exp get_vi in
+  match e with
+  | IConst i -> Cil.integer i
+  | Var v ->
+    let vi = get_vi v in
+    CM.exp_of_vi vi
+  | UnaryExp (op, e1) -> Cil.UnOp (cil_of_unary_op op, trans e1, Cil.intType)
+  | BinExp (op, e1, e2) -> Cil.BinOp (cil_of_bin_op op, trans e1, trans e2, Cil.intType)

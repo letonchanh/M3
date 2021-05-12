@@ -43,8 +43,8 @@ factor:
   ;
 
 unary:
-  | NOT unary { UnaryExp (Neg, $2) }
-  | MINUS unary { UnaryExp (Minus, $2) }
+  | NOT unary { UnaryExp (Not, $2) }
+  | MINUS unary { UnaryExp (Neg, $2) }
   | primary { $1 }
   ;
 

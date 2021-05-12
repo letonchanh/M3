@@ -230,7 +230,7 @@ let find_fun (ast:file) (fun_name:string) : fundec =
   | Some f -> f
   | None -> E.s (E.error "fun '%s' not in '%s'!" fun_name ast.fileName)
 
-let exp_of_vi (vi:varinfo): exp = Lval (var vi)
+let exp_of_vi (vi : varinfo): exp = Lval (var vi)
 				       
 (*[Some 1, None, Some 2] -> [1,2]*)
 let list_of_some (l:'a option list):'a list = 
