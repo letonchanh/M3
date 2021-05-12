@@ -34,7 +34,7 @@ let copyObj (x : 'a) =
 				      
 let writeSrc ?(use_stdout:bool=false)
     (filename:string) (ast:file): unit = 
-  let df oc = dumpFile defaultCilPrinter oc filename ast in
+  let df oc = dumpFile defaultCilPrinter oc filename ast in (* plainCilPrinter *)
   if use_stdout then df stdout 
   else (
     let fout = open_out filename in
@@ -206,6 +206,9 @@ let mkCall ?(ftype=TVoid []) ?(av=None) (fname:string) args : instr =
 let mkFunTyp (rt : typ) (args : (string * typ) list) : typ =
   TFun(rt, Some(L.map (fun a -> (fst a, snd a, [])) args), false, [])
 
+let mk_block_stmt stmts =
+  mkStmt (Block (mkBlock stmts))
+
 let getMainArgs (main_fd: fundec) : (varinfo * varinfo) =
   let isIntType t = match t with | TInt (IInt, _) -> true | _ -> false in
   let isPtrPtrChar t = match t with 
@@ -237,7 +240,6 @@ let list_of_some (l:'a option list):'a list =
   let rs = 
     L.fold_left (fun l' -> function |Some f -> f::l' |None -> l') [] l
   in L.rev rs
-
 
 (*Instrument common*)
 let mkUk
