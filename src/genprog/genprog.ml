@@ -6,7 +6,7 @@ module L = List
 module S = String
 module CM = Common
       
-class add_mba_visitor mba_expr = object(self)
+(* class add_mba_vars_visitor vs = object(self)
   inherit nopCilVisitor
 
   method private create_mba_stmt mba_expr : stmt =
@@ -21,43 +21,38 @@ class add_mba_visitor mba_expr = object(self)
       f.sbody.bstmts <- [self#create_mba_stmt mba_expr] @ f.sbody.bstmts;
       f in
     ChangeDoChildrenPost(f, action)
-end
+end *)
 
 let () = 
-  begin    
-    initCIL();
-    lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
-    Cprint.printLn := false; (* don't print line *)
+  begin
+    Printexc.record_backtrace true;
+    initCIL ();
+    (* reduce code, remove all junk stuff *)
+    lineDirectiveStyle := None;
+    (* don't print line *)
+    Cprint.printLn := false;
     (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
     useLogicalOperators := true;
     Rmtmps.rmUnusedInlines := true;
 
-    let template = "template.c" in
+    let template = "src/genprog/template.c" in
     let mba_src = "mba.c" in
     let mba_str = Sys.argv.(1) in
 
-    let _ = 
-      try
-        let lexbuf = Lexing.from_string mba_str in
-        let mba_exp = Mbaparser.mba_exp Mbalexer.tokenizer lexbuf in
-        let vs = Mba.vars_of_exp mba_exp in
-        let _ = print_endline ("MBA: " ^ (Mba.string_of_exp mba_exp)) in
-        let _ = print_endline ("vs: " ^ (CM.string_of_list (Mba.vars_of_exp mba_exp))) in
-        ()
-      with e ->
-        let msg = Printexc.to_string e in
-        (* E.s (E.error ("Cannot parse the MBA expression: " ^ msg) d_thisloc ()) *)
-        ()
-    in
-    ()
-
-    (* let ast = Frontc.parse template () in
-    
-    (* Gen MBA Statement *)    
-    let main_fd: fundec = CM.find_fun ast "main" in
-    ignore (visitCilFunction
-            (new add_mba_visitor mba_expr) main_fd);
-
-    CM.writeSrc mba_src ast *)
-
+    try
+      let lexbuf = Lexing.from_string mba_str in
+      let mba_exp = Mbaparser.mba_exp Mbalexer.tokenizer lexbuf in
+      let vs = Mba.vars_of_exp mba_exp in
+      ignore (E.log "MBA: %s\n" (Mba.string_of_exp mba_exp));
+      ignore (E.log "MBA vars: %s\n" (CM.string_of_list vs));
+      
+      (* Gen MBA Statement *)
+      let ast = Frontc.parse template () in
+      let main_fd = CM.find_fun ast "main" in
+      let cvs = List.map (fun v -> makeLocalVar main_fd v intType) vs in
+      CM.writeSrc mba_src ast
+    with e ->
+      let msg = Printexc.to_string e
+      and stack = Printexc.get_backtrace () in
+      E.s (E.error "%s\n%s" msg stack)
 end

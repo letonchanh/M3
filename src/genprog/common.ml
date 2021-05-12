@@ -107,7 +107,7 @@ class numVisitor ht (ignoreFuns:SS.t) = object(self)
 		mctr <- succ mctr
 	    )
 	  )
-	  | None -> E.s(E.error "not in a function")
+	  | None -> E.s (E.error "not in a function")
 	)
 	else s.sid <- 0;  (*Anything not considered has sid 0 *)
       in 
