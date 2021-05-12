@@ -13,4 +13,5 @@ S ~/.opam/4.06.0/lib/*/*/*
 B _build/
 B _build/*
 B _build/*/*
+B _build/*/*/*
 B +threads
