@@ -41,6 +41,15 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
     let v_mba = makeTempVar fd intType in
     v_mba, mkStmtOneInstr (Set (var v_mba, self#mk_cil_mba_exp, !currentLoc))
 
+  method private mk_term vis =
+    List.fold_left (fun acc vi -> BinOp (BAnd, acc, CM.exp_of_vi vi, intType)) (CM.exp_of_vi (List.hd vis)) (List.tl vis)
+
+  method private mk_terms vis =
+    let ss = List.filter (fun s -> List.length s > 1) (CM.subset vis) in
+    ignore (E.log "ss: %a\n" (d_list ";" (fun _ s -> (text "[") ++ (d_list "," (fun _ v -> text v.vname) () s) ++ (text "]"))) ss);
+    (* Create a temp var for each subset *)
+    List.map (fun s -> self#mk_term s) ss
+    
   method vstmt (s: stmt) =
     let action s =
       match s.skind with
@@ -49,16 +58,20 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
         let v_cnt_init_stmt = mkStmtOneInstr (Set (var v_cnt, integer args.v_iters, !currentLoc)) in
         (* Loop condition *)
         let bool_typ = TInt (IBool, []) in
-        (* let loop_cond = UnOp (LNot, BinOp (Gt, CM.exp_of_vi v_cnt, zero, bool_typ), bool_typ) in *)
-        let loop_cond = BinOp (Le, CM.exp_of_vi v_cnt, zero, bool_typ) in
+        let loop_cond = UnOp (LNot, BinOp (Gt, CM.exp_of_vi v_cnt, zero, bool_typ), bool_typ) in
+        (* let loop_cond = BinOp (Le, CM.exp_of_vi v_cnt, zero, bool_typ) in *)
         let break_blk = mkBlock [mkStmt (Break !currentLoc)] in
         let loop_cond_stmt = mkStmt (If (loop_cond, break_blk, mkBlock [], !currentLoc)) in
         let decr_stmt = mkStmtOneInstr (Set (var v_cnt, BinOp (MinusA, CM.exp_of_vi v_cnt, one, intType), !currentLoc)) in
         (* Loop body *)
         let vis = List.map (fun (_, vi) -> vi) symtab in
         let rand_init_stmts = List.map self#mk_rand_init_stmt vis in
+        let terms = self#mk_terms vis in
+        let term_stmts = List.map (fun term ->
+          let tv = makeTempVar fd intType in
+          mkStmtOneInstr (Set (var tv, term, !currentLoc))) terms in
         let v_mba, mba_stmt = self#mk_mba_stmt in
-        let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ [mba_stmt]) in
+        let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ term_stmts @ [mba_stmt]) in
         let mba_loop = mkStmt (Loop (mba_loop_body, !currentLoc, None, None)) in
         CM.mk_block_stmt [v_cnt_init_stmt; mba_loop; s]
       | _ -> s

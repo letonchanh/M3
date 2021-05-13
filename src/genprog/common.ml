@@ -272,11 +272,10 @@ let mkUk
 
 let rec subset vs =
   match vs with
-  | [] -> failwith "this is an empty set!"
-  | [a]-> [[a]]
-  | h :: ls -> let xs = subset ls in
-               let ys = List.map (fun l -> h :: l) xs in
-               [[h]] @ xs @ ys
+  | [] -> [[]]
+  | x::xs ->
+    let ys = subset xs in
+    (List.map (fun y -> x::y) ys) @ ys
 	   
 let type_of_global = function
   | GType _ -> "GType"
