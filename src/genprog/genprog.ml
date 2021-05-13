@@ -1,4 +1,5 @@
 open Cil
+open Pretty
 module E = Errormsg
 module H = Hashtbl
 module P = Printf	     
@@ -29,13 +30,35 @@ class annotate_mba_visitor vis mba = object(self)
     ChangeDoChildrenPost (s, action)
 end
 
+let is_missing_proto_extern_or_builtin_function glb =
+  (* ignore (E.log "%s: %a" (CM.type_of_global glb) d_global glb); *)
+  let r = match glb with
+    | GVarDecl (vi, _) ->
+      (* ignore (E.log "vi:\n%a\n" CM.pretty_of_varinfo vi); *)
+      if Hashtbl.mem builtinFunctions vi.vname then true
+      else
+        (match vi.vstorage with
+        | Extern -> 
+          List.exists (fun attr -> 
+            match attr with 
+            | Attr ("missingproto", _) -> true
+            | _ -> false) (CM.attributes_of_typ vi.vtype)
+        | _ -> false)
+    | _ -> false
+  in
+  (* ignore (E.log "is missingproto: %b\n" r); *)
+  r
+
+let remove_missing_proto_externs_and_builtin_functions glbs =
+  List.filter (fun glb -> not (is_missing_proto_extern_or_builtin_function glb)) glbs
+
 let () = 
   begin
     Printexc.record_backtrace true;
     initCIL ();
     (* reduce code, remove all junk stuff *)
     lineDirectiveStyle := None;
-    print_CIL_Input := true;
+    (* print_CIL_Input := true; *)
     (* don't print line *)
     Cprint.printLn := false;
     (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
@@ -58,6 +81,7 @@ let () =
       let libs = ["stdio.h"; "stdlib.h"; "time.h"] in 
       let includes = List.map (fun lib -> "#include \"" ^ lib ^ "\"") libs in
       ast.globals <- (GText (S.concat "\n" includes))::ast.globals;
+      ast.globals <- remove_missing_proto_externs_and_builtin_functions ast.globals;
 
       let main_fd = CM.find_fun ast "main" in
       let vis = List.map (fun v -> makeLocalVar main_fd v intType) vs in

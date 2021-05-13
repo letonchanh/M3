@@ -1,4 +1,6 @@
 open Cil
+open Pretty
+
 module E = Errormsg
 module H = Hashtbl
 module P = Printf
@@ -34,7 +36,7 @@ let copyObj (x : 'a) =
 				      
 let writeSrc ?(use_stdout:bool=false)
     (filename:string) (ast:file): unit = 
-  let df oc = dumpFile defaultCilPrinter oc filename ast in (* plainCilPrinter *)
+  let df oc = dumpFile defaultCilPrinter (* plainCilPrinter *) oc filename ast in
   if use_stdout then df stdout 
   else (
     let fout = open_out filename in
@@ -276,4 +278,38 @@ let rec subset vs =
                let ys = List.map (fun l -> h :: l) xs in
                [[h]] @ xs @ ys
 	   
-    
+let type_of_global = function
+  | GType _ -> "GType"
+  | GCompTag _ -> "GCompTag"
+  | GCompTagDecl _ -> "GCompTagDecl"
+  | GEnumTag _ -> "GEnumTag"
+  | GEnumTagDecl _ -> "GEnumTagDecl"
+  | GVarDecl _ -> "GVarDecl"
+  | GVar _ -> "GVar"
+  | GFun _ -> "GFun"
+  | GAsm _ -> "GAsm"
+  | GPragma _ -> "GPragma"
+  | GText _ -> "GText"
+
+let pretty_of_varinfo () vi = 
+  indent 2 (
+    (text "vname: ") ++ (text vi.vname) ++ line ++
+    (text "vtype: ") ++ (d_type () vi.vtype) ++ line ++
+    (text "vattr: ") ++ (d_attrlist () vi.vattr) ++ line ++
+    (text "vstorage: ") ++ (d_storage () vi.vstorage) ++ line ++
+    (text "vglob: ") ++ (text (string_of_bool vi.vglob)) ++ line ++
+    (text "vinline: ") ++ (text (string_of_bool vi.vinline)) ++ line ++
+    (text "vdecl: ") ++ (d_loc () vi.vdecl) ++ line ++
+    (text "vdescr: ") ++ vi.vdescr)
+
+let attributes_of_typ = function
+  | TVoid attrs -> attrs
+  | TInt (_, attrs) -> attrs
+  | TFloat (_, attrs) -> attrs
+  | TPtr (_, attrs) -> attrs
+  | TArray (_, _, attrs) -> attrs
+  | TFun (_, _, _, attrs) -> attrs
+  | TNamed (_, attrs) -> attrs
+  | TComp (_, attrs) -> attrs
+  | TEnum (_, attrs) -> attrs
+  | TBuiltin_va_list attrs -> attrs
