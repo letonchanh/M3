@@ -1,0 +1,3 @@
+[submodule "deps/dig"]
+	path = deps/dig
+	url = https://github.com/unsat/dig.git
