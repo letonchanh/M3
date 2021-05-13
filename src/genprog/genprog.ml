@@ -15,8 +15,10 @@ class annotate_mba_visitor fd vis mba_exp cnt = object(self)
   inherit nopCilVisitor
 
   method private mk_rand_init_stmt vi =
-    CM.mkCall ~av:(Some (var vi)) rand_fname []
-    |> mkStmtOneInstr
+    let v_rand = makeTempVar fd intType in
+    let rand_stmt = mkStmtOneInstr (CM.mkCall ~av:(Some (var v_rand)) rand_fname []) in
+    let assign_stmt = mkStmtOneInstr (Set (var vi, BinOp (Mod, CM.exp_of_vi v_rand, integer 10, intType), !currentLoc)) in
+    CM.mk_block_stmt [rand_stmt; assign_stmt]
 
   method private mk_mba_stmt =
     let v_mba = makeTempVar fd intType in
