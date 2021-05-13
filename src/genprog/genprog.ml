@@ -11,7 +11,7 @@ let template = "src/genprog/template.c"
 let mba_src = "mba.c"
 let rand_fname = "rand"
 
-class annotate_mba_visitor fd vis mba_exp = object(self)
+class annotate_mba_visitor fd vis mba_exp cnt = object(self)
   inherit nopCilVisitor
 
   method private mk_rand_init_stmt vi =
@@ -26,10 +26,27 @@ class annotate_mba_visitor fd vis mba_exp = object(self)
     let action s =
       match s.skind with
       | Return _ ->
+        let v_cnt = makeTempVar fd intType in
+        let v_cnt_init_stmt = mkStmtOneInstr (Set (var v_cnt, integer cnt, !currentLoc)) in
+        (* Loop condition *)
+        let bool_typ = TInt (IBool, []) in
+        (* let loop_cond = UnOp (LNot, BinOp (Gt, CM.exp_of_vi v_cnt, zero, bool_typ), bool_typ) in *)
+        let loop_cond = BinOp (Le, CM.exp_of_vi v_cnt, zero, bool_typ) in
+        let break_blk = mkBlock [mkStmt (Break !currentLoc)] in
+        let loop_cond_stmt = mkStmt (If (loop_cond, break_blk, mkBlock [], !currentLoc)) in
+        let decr_stmt = mkStmtOneInstr (Set (var v_cnt, BinOp (MinusA, CM.exp_of_vi v_cnt, one, intType), !currentLoc)) in
+        (* Loop body *)
         let rand_init_stmts = List.map self#mk_rand_init_stmt vis in
         let v_mba, mba_stmt = self#mk_mba_stmt in
-        let mba_blk = CM.mk_block_stmt (rand_init_stmts @ [mba_stmt]) in
-        CM.mk_block_stmt [mba_blk; s]
+        let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ [mba_stmt]) in
+        let mba_loop = mkStmt (Loop (mba_loop_body, !currentLoc, None, None)) in
+        CM.mk_block_stmt [v_cnt_init_stmt; mba_loop; s]
+      | Loop (blk, _, s1, s2) ->
+        let d_stmt_opt = fun _ s -> match s with | None ->  nil | Some s -> d_stmt () s in
+        ignore (E.log "blk: %a" d_block blk);
+        ignore (E.log "s1: %a" d_stmt_opt s1);
+        ignore (E.log "s2: %a" d_stmt_opt s2);
+        s
       | _ -> s
     in
     ChangeDoChildrenPost (s, action)
@@ -95,7 +112,7 @@ let () =
       let get_vi = Hashtbl.find symtab in
       let cil_exp = Mba.cil_of_exp get_vi mba_exp in
       ignore (E.log "MBA in Cil: %a\n" d_exp cil_exp);
-      ignore (visitCilFunction (new annotate_mba_visitor main_fd vis cil_exp) main_fd);
+      ignore (visitCilFunction (new annotate_mba_visitor main_fd vis cil_exp cnt) main_fd);
       CM.writeSrc mba_src ast
     with e ->
       let msg = Printexc.to_string e
