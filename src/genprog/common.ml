@@ -136,7 +136,28 @@ class everyVisitor = object
     ChangeDoChildrenPost(b, action)
 end
 				      
-
+(*simplify expressions visitor for !(!e)*)
+class simp_exp_visitor = object(self)
+  inherit nopCilVisitor
+  method vexpr (e: exp) =
+     let rec reducer expr =
+      (match expr with 
+        |UnOp (uop1, expr1, type1) -> 
+          (match uop1 with
+            |LNot -> 
+              (match expr1 with
+                |UnOp (uop2, expr2, type2) -> 
+                  (match uop2 with
+                    |LNot -> reducer expr2
+                    |_ -> UnOp ( uop1, reducer expr1, type1))
+                |_ -> UnOp (uop1, reducer expr1, type1))
+            |_ -> UnOp (uop1, reducer expr1, type1)
+          )
+        |_ -> reducer expr      
+      ) in
+     let e_switch = reducer e in
+     ChangeTo e_switch
+end
 
 class breakCondVisitor = object(self)
   inherit nopCilVisitor
@@ -275,7 +296,7 @@ let rec subset vs =
   | [] -> [[]]
   | x::xs ->
     let ys = subset xs in
-    (List.map (fun y -> x::y) ys) @ ys
+    (L.map (fun y -> x::y) ys) @ ys
 	   
 let type_of_global = function
   | GType _ -> "GType"
