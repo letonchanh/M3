@@ -41,12 +41,12 @@ class annotate_mba_visitor fd vis mba_exp cnt = object(self)
         let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ [mba_stmt]) in
         let mba_loop = mkStmt (Loop (mba_loop_body, !currentLoc, None, None)) in
         CM.mk_block_stmt [v_cnt_init_stmt; mba_loop; s]
-      | Loop (blk, _, s1, s2) ->
+      (* | Loop (blk, _, s1, s2) ->
         let d_stmt_opt = fun _ s -> match s with | None ->  nil | Some s -> d_stmt () s in
         ignore (E.log "blk: %a" d_block blk);
         ignore (E.log "s1: %a" d_stmt_opt s1);
         ignore (E.log "s2: %a" d_stmt_opt s2);
-        s
+        s *)
       | _ -> s
     in
     ChangeDoChildrenPost (s, action)
