@@ -20,6 +20,8 @@ type v_args = {
 class annotate_mba_visitor fd (args: v_args) = object(self)
   inherit nopCilVisitor
 
+  val mba_vname = "mba"
+
   val symtab = 
     let vs = Mba.vars_of_exp args.v_mba_exp in
     List.map (fun v -> (v, makeLocalVar fd v intType)) vs
@@ -38,7 +40,7 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
     CM.mk_block_stmt [rand_stmt; assign_stmt]
 
   method private mk_mba_stmt =
-    let v_mba = makeTempVar fd intType in
+    let v_mba = makeLocalVar fd mba_vname intType in
     v_mba, mkStmtOneInstr (Set (var v_mba, self#mk_cil_mba_exp, !currentLoc))
 
   method private mk_term vis =
@@ -67,13 +69,20 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
         let vis = List.map (fun (_, vi) -> vi) symtab in
         let rand_init_stmts = List.map self#mk_rand_init_stmt vis in
         let terms = self#mk_terms vis in
-        let term_stmts = List.map (fun term ->
+        let tvs, term_stmts = List.map (fun term ->
           let tv = makeTempVar fd intType in
-          mkStmtOneInstr (Set (var tv, term, !currentLoc))) terms in
+          tv, mkStmtOneInstr (Set (var tv, term, !currentLoc))) terms |> List.split in
         let v_mba, mba_stmt = self#mk_mba_stmt in
-        let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ term_stmts @ [mba_stmt]) in
+        (* Create printf stmt *)
+        let vars = vis @ tvs @ [v_mba] in
+        let str = fd.svar.vname ^ ": " ^ (S.concat ", " (L.map (fun _ -> "%d") vars) ^ "\n") in
+        let printf_stmt = mkStmtOneInstr (CM.mkCall "printf" (Const (CStr (str))::(L.map CM.exp_of_vi vars))) in
+        let vtrace_str = fd.svar.vname ^ ": " ^ (S.concat ", " (L.map (fun v -> "I " ^ v.vname) vars) ^ "\n") in
+        let vtrace_stmt = mkStmtOneInstr (CM.mkCall "printf" [Const (CStr (vtrace_str))]) in
+
+        let mba_loop_body = mkBlock ([loop_cond_stmt; decr_stmt] @ rand_init_stmts @ term_stmts @ [mba_stmt] @ [printf_stmt]) in
         let mba_loop = mkStmt (Loop (mba_loop_body, !currentLoc, None, None)) in
-        CM.mk_block_stmt [v_cnt_init_stmt; mba_loop; s]
+        CM.mk_block_stmt [v_cnt_init_stmt; vtrace_stmt; mba_loop; s]
       | _ -> s
     in
     ChangeDoChildrenPost (s, action)
