@@ -153,7 +153,11 @@ class simp_exp_visitor = object(self)
                 |_ -> UnOp (uop1, reducer expr1, type1))
             |_ -> UnOp (uop1, reducer expr1, type1)
           )
-        |_ -> reducer expr      
+        |BinOp (binop, bexpr1, bexpr2, btyp) -> BinOp (binop, reducer bexpr1, reducer bexpr2, btyp)
+        |SizeOfE expr1 -> SizeOfE (reducer expr1)
+        |AlignOfE expr1 -> AlignOfE (reducer expr1)
+        |CastE (typ1, expr1) -> CastE (typ1, reducer expr1)
+        |_ -> expr    
       ) in
      let e_switch = reducer e in
      ChangeTo e_switch
