@@ -19,8 +19,7 @@ Executable "genprog"
   MainIs         : genprog.ml
   BuildTools     : ocamlbuild # camlp4of
   CompiledObject : native
-  ByteOpt        : -rectypes -custom camlp4lib.cma -w -a+8 -warn-error -a -g
-  NativeOpt      : -rectypes camlp4lib.cmxa -w -a+8 -warn-error -a
+  ByteOpt        : -rectypes -custom -w -a+8 -warn-error -a -g
+  NativeOpt      : -rectypes -w -a+8 -warn-error -a
   Install        : false
-  BuildDepends   : cil,
-                   camlp4
+  BuildDepends   : cil
