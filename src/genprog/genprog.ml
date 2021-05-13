@@ -11,20 +11,25 @@ let template = "src/genprog/template.c"
 let mba_src = "mba.c"
 let rand_fname = "rand"
 
-class annotate_mba_visitor vis mba = object(self)
+class annotate_mba_visitor fd vis mba_exp = object(self)
   inherit nopCilVisitor
 
   method private mk_rand_init_stmt vi =
     CM.mkCall ~av:(Some (var vi)) rand_fname []
     |> mkStmtOneInstr
 
+  method private mk_mba_stmt =
+    let v_mba = makeTempVar fd intType in
+    v_mba, mkStmtOneInstr (Set (var v_mba, mba_exp, !currentLoc))
+
   method vstmt (s: stmt) =
     let action s =
       match s.skind with
       | Return _ ->
         let rand_init_stmts = List.map self#mk_rand_init_stmt vis in
-        let rand_init_blk = CM.mk_block_stmt rand_init_stmts in
-        CM.mk_block_stmt [rand_init_blk; s]
+        let v_mba, mba_stmt = self#mk_mba_stmt in
+        let mba_blk = CM.mk_block_stmt (rand_init_stmts @ [mba_stmt]) in
+        CM.mk_block_stmt [mba_blk; s]
       | _ -> s
     in
     ChangeDoChildrenPost (s, action)
@@ -90,7 +95,7 @@ let () =
       let get_vi = Hashtbl.find symtab in
       let cil_exp = Mba.cil_of_exp get_vi mba_exp in
       ignore (E.log "MBA in Cil: %a\n" d_exp cil_exp);
-      ignore (visitCilFunction (new annotate_mba_visitor vis cil_exp) main_fd);
+      ignore (visitCilFunction (new annotate_mba_visitor main_fd vis cil_exp) main_fd);
       CM.writeSrc mba_src ast
     with e ->
       let msg = Printexc.to_string e
