@@ -1,0 +1,12 @@
+*
+!*.*
+Makefile
+configure
+_build
+_tags
+*.out
+*.native
+myocamlbuild.ml
+setup.*
+*.c
+*.tcs
