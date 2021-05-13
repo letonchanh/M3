@@ -136,31 +136,56 @@ class everyVisitor = object
     ChangeDoChildrenPost(b, action)
 end
 				      
-(*simplify expressions visitor for !(!e)*)
+(* simplify expressions visitor for !(!e) *)
 class simp_exp_visitor = object(self)
   inherit nopCilVisitor
   method vexpr (e: exp) =
      let rec reducer expr =
       (match expr with 
-        |UnOp (uop1, expr1, type1) -> 
+        | UnOp (uop1, expr1, type1) -> 
           (match uop1 with
-            |LNot -> 
+            | LNot -> 
               (match expr1 with
-                |UnOp (uop2, expr2, type2) -> 
+                | UnOp (uop2, expr2, type2) -> 
                   (match uop2 with
-                    |LNot -> reducer expr2
-                    |_ -> UnOp ( uop1, reducer expr1, type1))
+                    | LNot -> reducer expr2
+                    | _ -> UnOp ( uop1, reducer expr1, type1))
                 |_ -> UnOp (uop1, reducer expr1, type1))
-            |_ -> UnOp (uop1, reducer expr1, type1)
+            | _ -> UnOp (uop1, reducer expr1, type1)
           )
-        |BinOp (binop, bexpr1, bexpr2, btyp) -> BinOp (binop, reducer bexpr1, reducer bexpr2, btyp)
-        |SizeOfE expr1 -> SizeOfE (reducer expr1)
-        |AlignOfE expr1 -> AlignOfE (reducer expr1)
-        |CastE (typ1, expr1) -> CastE (typ1, reducer expr1)
-        |_ -> expr    
+        | BinOp (binop, bexpr1, bexpr2, btyp) -> BinOp (binop, reducer bexpr1, reducer bexpr2, btyp)
+        | SizeOfE expr1 -> SizeOfE (reducer expr1)
+        | AlignOfE expr1 -> AlignOfE (reducer expr1)
+        | CastE (typ1, expr1) -> CastE (typ1, reducer expr1)
+        | _ -> expr    
       ) in
      let e_switch = reducer e in
      ChangeTo e_switch
+end
+
+class simplify_exp_visitor = object(self)
+  inherit nopCilVisitor
+
+  method vexpr (e: exp) =
+    let action e =
+      ignore (E.log "simplify_exp_visitor: e: %a\n" d_exp e);
+      match e with
+      | UnOp (LNot, UnOp (LNot, e1, _), _) ->
+        ignore (E.log "simplify_exp_visitor: e1: %a\n" d_exp e1);
+        e1
+      | _ -> e
+    in
+    ChangeDoChildrenPost (e, action)
+end
+
+class print_loop_visitor = object(self)
+  inherit nopCilVisitor
+
+  method vstmt (s: stmt) =
+    (match s.skind with
+    | Loop (blk, _, _, _) -> ignore (E.log "loop: %a\n" d_block blk)
+    | _ -> ());
+    DoChildren
 end
 
 class breakCondVisitor = object(self)

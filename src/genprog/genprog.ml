@@ -50,7 +50,7 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
 
   method private mk_terms vis =
     let ss = List.filter (fun s -> List.length s > 1) (CM.subset vis) in
-    ignore (E.log "ss: %a\n" (d_list ";" (fun _ s -> (text "[") ++ (d_list "," (fun _ v -> text v.vname) () s) ++ (text "]"))) ss);
+    (* ignore (E.log "ss: %a\n" (d_list ";" (fun _ s -> (text "[") ++ (d_list "," (fun _ v -> text v.vname) () s) ++ (text "]"))) ss); *)
     (* Create a temp var for each subset *)
     List.map (fun s -> self#mk_term s) ss
     
@@ -150,6 +150,8 @@ let () =
       let main_fd = CM.find_fun ast "main" in
       
       ignore (visitCilFunction (new annotate_mba_visitor main_fd vargs) main_fd);
+      (* ignore (visitCilFunction (new CM.print_loop_visitor) main_fd); *)
+      (* ignore (visitCilFunction (new CM.simplify_exp_visitor) main_fd); *)
       CM.writeSrc mba_src ast
     with e ->
       let msg = Printexc.to_string e
