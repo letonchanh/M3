@@ -44,6 +44,8 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
     v_mba, mkStmtOneInstr (Set (var v_mba, self#mk_cil_mba_exp, !currentLoc))
 
   method private mk_term vis =
+    let term_str = String.concat "AND" (List.map (fun vi -> vi.vname) vis) in
+    term_str,
     List.fold_left (fun acc vi -> BinOp (BAnd, acc, CM.exp_of_vi vi, intType)) (CM.exp_of_vi (List.hd vis)) (List.tl vis)
 
   method private mk_terms vis =
@@ -69,8 +71,8 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
         let vis = List.map (fun (_, vi) -> vi) symtab in
         let rand_init_stmts = List.map self#mk_rand_init_stmt vis in
         let terms = self#mk_terms vis in
-        let tvs, term_stmts = List.map (fun term ->
-          let tv = makeTempVar fd intType in
+        let tvs, term_stmts = List.map (fun (term_str, term) ->
+          let tv = makeLocalVar fd term_str intType in
           tv, mkStmtOneInstr (Set (var tv, term, !currentLoc))) terms |> List.split in
         let v_mba, mba_stmt = self#mk_mba_stmt in
         (* Create printf stmt *)
