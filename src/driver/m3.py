@@ -58,6 +58,6 @@ if __name__ == "__main__":
     solver = dig_alg.DigTraces(inp, None)
     # sys.setprofile(trace_func)
     res = solver.start(seed=seed, maxdeg=2)
-    print(res)
+    print(type(res))
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
