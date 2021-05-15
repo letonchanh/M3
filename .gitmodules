@@ -1,4 +1,4 @@
 [submodule "deps/dig"]
 	path = deps/dig
-	url = https://github.com/unsat/dig.git
+	url = git@github.com:letonchanh/dig-m3.git
 	ignore = dirty

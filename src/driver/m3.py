@@ -40,7 +40,8 @@ class Miscs(dig_miscs.Miscs):
 def trace_func(frame: FrameType, event: str, arg):
     if event == 'return':
         func_name = frame.f_code.co_name
-        print(f'Return from {func_name}, returning {arg}')
+        if func_name == "infer_eqts":
+            print(f'Return from {func_name}, returning {arg}')
     return trace_func
 
 if __name__ == "__main__":
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     dig_miscs.Miscs.init_terms = Miscs.init_terms
     solver = dig_alg.DigTraces(inp, None)
     # sys.setprofile(trace_func)
-    solver.start(seed=seed, maxdeg=2)
+    res = solver.start(seed=seed, maxdeg=2)
+    print(res)
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
