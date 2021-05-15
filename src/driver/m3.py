@@ -1,7 +1,9 @@
+import logging
 import sys
 import os
 import time
 from pathlib import Path
+from types import FrameType
 
 pwd = os.path.realpath(os.path.dirname(__file__))
 dig_path = os.path.realpath(os.path.join(pwd, '../../deps/dig/src'))
@@ -14,7 +16,8 @@ import helpers.miscs as dig_miscs
 import helpers.vcommon as dig_vcommon
 import sage.all
 
-mlog = dig_vcommon.getLogger(__name__, dig_settings.logger_level)
+mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
+mba_vname = "mba"
 
 class Miscs(dig_miscs.Miscs):
     @classmethod
@@ -25,14 +28,20 @@ class Miscs(dig_miscs.Miscs):
 
         parent = dig_miscs.Miscs
 
-        terms = parent.get_terms([sage.all.var(v) for v in vs if v != "mba"], deg) # + [sage.all.var("mba")]
+        terms = parent.get_terms([sage.all.var(v) for v in vs if v != mba_vname], deg) + [sage.all.var(mba_vname)]
 
-        template, uks = parent.mk_template(terms, sage.all.var("mba"), retCoefVars=True)
+        template, uks = parent.mk_template(terms, 0, retCoefVars=True)
         
         mlog.debug(f"template: {template}")
 
         n_eqts_needed = int(rate * len(uks))
         return terms, template, uks, n_eqts_needed
+
+def trace_func(frame: FrameType, event: str, arg):
+    if event == 'return':
+        func_name = frame.f_code.co_name
+        print(f'Return from {func_name}, returning {arg}')
+    return trace_func
 
 if __name__ == "__main__":
     dig_settings.DO_EQTS = True
@@ -43,7 +52,10 @@ if __name__ == "__main__":
     inp = Path("../../mba.tcs")
     seed = round(time.time(), 2)
 
+    # Override Dig's init_terms
     dig_miscs.Miscs.init_terms = Miscs.init_terms
     solver = dig_alg.DigTraces(inp, None)
-    solver.start(seed=seed, maxdeg=2)        
+    # sys.setprofile(trace_func)
+    solver.start(seed=seed, maxdeg=2)
+    # sys.setprofile(None)
     dig.killchildren(os.getpid())
