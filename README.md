@@ -19,3 +19,8 @@
   ```
   run_m3.sh mba_exp
   ```
+## Run on `MBA-Solver` Dataset
+```
+python3 benchmarks_run.py examples/mba_solver/pldi_dataset_linear_MBA.txt 20 4
+```
+
