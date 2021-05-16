@@ -2,6 +2,7 @@ import logging
 import sys
 import os
 import time
+import operator
 from pathlib import Path
 from types import FrameType
 
@@ -18,6 +19,7 @@ import sage.all
 
 mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
+mba_var = sage.all.var(mba_vname)
 
 class Miscs(dig_miscs.Miscs):
     @classmethod
@@ -28,7 +30,7 @@ class Miscs(dig_miscs.Miscs):
 
         parent = dig_miscs.Miscs
 
-        terms = parent.get_terms([sage.all.var(v) for v in vs if v != mba_vname], deg) + [sage.all.var(mba_vname)]
+        terms = parent.get_terms([sage.all.var(v) for v in vs if v != mba_vname], deg) + [mba_var]
 
         template, uks = parent.mk_template(terms, 0, retCoefVars=True)
         
@@ -57,7 +59,10 @@ if __name__ == "__main__":
     dig_miscs.Miscs.init_terms = Miscs.init_terms
     solver = dig_alg.DigTraces(inp, None)
     # sys.setprofile(trace_func)
-    res = solver.start(seed=seed, maxdeg=2)
-    print(type(res))
+    dinvs = solver.start(seed=seed, maxdeg=2)
+    invs = dinvs["main"]
+    rs = (inv.inv.solve(mba_var) for inv in invs)
+    for r in rs:
+        print(r)
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
