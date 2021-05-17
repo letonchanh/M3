@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import operator
+import ast
 from pathlib import Path
 from types import FrameType
 
@@ -16,6 +17,8 @@ import settings as dig_settings
 import helpers.miscs as dig_miscs
 import helpers.vcommon as dig_vcommon
 import sage.all
+from helpers.z3utils import Z3
+import z3
 
 mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
@@ -39,6 +42,16 @@ class Miscs(dig_miscs.Miscs):
         n_eqts_needed = int(rate * len(uks))
         return terms, template, uks, n_eqts_needed
 
+    # @classmethod
+    # def parse(cls, node, num_bits):
+    #     if isinstance(node, ast.Name):
+    #         return z3.BitVec(str(node.id), num_bits)
+    #     elif isinstance(node, ast.Num):
+    #         return z3.BitVecVal(str(node.n), num_bits)
+    #     else:
+    #         Z3.parse = lambda node: cls.parse(node, num_bits)
+    #         return Z3.parse(node)
+
 def trace_func(frame: FrameType, event: str, arg):
     if event == 'return':
         func_name = frame.f_code.co_name
@@ -61,8 +74,12 @@ if __name__ == "__main__":
     # sys.setprofile(trace_func)
     dinvs = solver.start(seed=seed, maxdeg=2)
     invs = dinvs["main"]
-    rs = (inv.inv.solve(mba_var) for inv in invs)
-    for r in rs:
-        print(r)
+    rss = (inv.inv.solve(mba_var) for inv in invs)
+    sols = set([r.rhs() for rs in rss for r in rs ])
+    print(sols)
+    for sol in sols:
+        print(type(sol))
+        e = Z3.parse(str(sol))
+        
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
