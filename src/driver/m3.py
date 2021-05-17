@@ -92,7 +92,7 @@ class Miscs(dig_miscs.Miscs):
         z3_trans = Z3Tranformer()
         node = z3_trans.visit(node)
         print(node)
-        # return Z3.parse(node)
+        return node
 
 def trace_func(frame: FrameType, event: str, arg):
     if event == 'return':
