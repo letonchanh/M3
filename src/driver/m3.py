@@ -24,6 +24,48 @@ mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
 mba_var = sage.all.var(mba_vname)
 
+class Z3Tranformer(ast.NodeTransformer):
+    def visit_Name(self, node: ast.Name):
+        return z3.BitVec(str(node.id), 32)
+
+    def visit_Num(self, node: ast.Name):
+        return z3.BitVecVal(str(node.n), 32)
+
+    def visit_Add(self, node: ast.Add):
+        return operator.add
+
+    def visit_Sub(self, node: ast.Sub):
+        return operator.sub
+
+    def visit_Mult(self, node: ast.Mult):
+        return operator.mul
+
+    def visit_Div(self, node: ast.Div):
+        return operator.truediv
+
+    def visit_BitAnd(self, node: ast.BitAnd):
+        return operator.and_
+
+    def visit_BitOr(self, node: ast.BitOr):
+        return operator.or_
+
+    def visit_BitXor(self, node: ast.BitXor):
+        return operator.xor
+
+    def visit_Invert(self, node: ast.Invert):
+        return operator.invert
+
+    def visit_BinOp(self, node: ast.BinOp):
+        node.left = self.visit(node.left)
+        node.right = self.visit(node.right)
+        node.op = self.visit(node.op)
+        return node.op(node.left, node.right)
+
+    def visit_UnaryOp(self, node: ast.UnaryOp):
+        node.operand = self.visit(node.operand)
+        node.op = self.visit(node.op)
+        return node.op(node.operand)
+
 class Miscs(dig_miscs.Miscs):
     @classmethod
     def init_terms(cls, vs, deg, rate):
@@ -42,15 +84,15 @@ class Miscs(dig_miscs.Miscs):
         n_eqts_needed = int(rate * len(uks))
         return terms, template, uks, n_eqts_needed
 
-    # @classmethod
-    # def parse(cls, node, num_bits):
-    #     if isinstance(node, ast.Name):
-    #         return z3.BitVec(str(node.id), num_bits)
-    #     elif isinstance(node, ast.Num):
-    #         return z3.BitVecVal(str(node.n), num_bits)
-    #     else:
-    #         Z3.parse = lambda node: cls.parse(node, num_bits)
-    #         return Z3.parse(node)
+    @classmethod
+    def parse_to_bv(cls, str, num_bits):
+        node = ast.parse("~x|y&z")
+        node = node.body[0].value
+        print(ast.dump(node))
+        z3_trans = Z3Tranformer()
+        node = z3_trans.visit(node)
+        print(node)
+        # return Z3.parse(node)
 
 def trace_func(frame: FrameType, event: str, arg):
     if event == 'return':
@@ -79,7 +121,7 @@ if __name__ == "__main__":
     print(sols)
     for sol in sols:
         print(type(sol))
-        e = Z3.parse(str(sol))
+        e = Miscs.parse_to_bv(str(sol), 32)
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
