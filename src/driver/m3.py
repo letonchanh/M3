@@ -25,11 +25,11 @@ mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
 mba_var = sage.all.var(mba_vname)
 bv_size = 32
+bv_ops = ['AND', 'OR', 'NOT']
 
 class Z3Tranformer(ast.NodeTransformer):
     def parse_id(self, s):
-        s = s.replace('AND', ' AND ')
-        vs = [z3.BitVec(v, bv_size) for v in s.split() if v != 'AND']
+        vs = [z3.BitVec(v, bv_size) for v in s.split('_') if v not in bv_ops]
         return reduce(operator.and_, vs)
         
 

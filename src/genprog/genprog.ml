@@ -44,7 +44,7 @@ class annotate_mba_visitor fd (args: v_args) = object(self)
     v_mba, mkStmtOneInstr (Set (var v_mba, self#mk_cil_mba_exp, !currentLoc))
 
   method private mk_term vis =
-    let term_str = String.concat "AND" (List.map (fun vi -> vi.vname) vis) in
+    let term_str = String.concat "_AND_" (List.map (fun vi -> vi.vname) vis) in
     term_str,
     List.fold_left (fun acc vi -> BinOp (BAnd, acc, CM.exp_of_vi vi, intType)) (CM.exp_of_vi (List.hd vis)) (List.tl vis)
 
