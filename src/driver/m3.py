@@ -6,6 +6,7 @@ import operator
 import ast
 from pathlib import Path
 from types import FrameType
+from functools import reduce
 
 pwd = os.path.realpath(os.path.dirname(__file__))
 dig_path = os.path.realpath(os.path.join(pwd, '../../deps/dig/src'))
@@ -23,13 +24,20 @@ import z3
 mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
 mba_var = sage.all.var(mba_vname)
+bv_size = 32
 
 class Z3Tranformer(ast.NodeTransformer):
+    def parse_id(self, s):
+        s = s.replace('AND', ' AND ')
+        vs = [z3.BitVec(v, bv_size) for v in s.split() if v != 'AND']
+        return reduce(operator.and_, vs)
+        
+
     def visit_Name(self, node: ast.Name):
-        return z3.BitVec(str(node.id), 32)
+        return self.parse_id(str(node.id))
 
     def visit_Num(self, node: ast.Name):
-        return z3.BitVecVal(str(node.n), 32)
+        return z3.BitVecVal(str(node.n), bv_size)
 
     def visit_Add(self, node: ast.Add):
         return operator.add
@@ -42,6 +50,9 @@ class Z3Tranformer(ast.NodeTransformer):
 
     def visit_Div(self, node: ast.Div):
         return operator.truediv
+
+    def visit_USub(self, node: ast.USub):
+        return operator.neg
 
     def visit_BitAnd(self, node: ast.BitAnd):
         return operator.and_
@@ -85,8 +96,8 @@ class Miscs(dig_miscs.Miscs):
         return terms, template, uks, n_eqts_needed
 
     @classmethod
-    def parse_to_bv(cls, str, num_bits):
-        node = ast.parse("~x|y&z")
+    def parse_to_bv(cls, s, num_bits):
+        node = ast.parse(s)
         node = node.body[0].value
         print(ast.dump(node))
         z3_trans = Z3Tranformer()
@@ -117,11 +128,9 @@ if __name__ == "__main__":
     dinvs = solver.start(seed=seed, maxdeg=2)
     invs = dinvs["main"]
     rss = (inv.inv.solve(mba_var) for inv in invs)
-    sols = set([r.rhs() for rs in rss for r in rs ])
-    print(sols)
-    for sol in sols:
-        print(type(sol))
-        e = Miscs.parse_to_bv(str(sol), 32)
+    sols = set([r.rhs() for rs in rss for r in rs])
+    sols = [Miscs.parse_to_bv(str(sol), bv_size) for sol in sols]
+    print('Solutions: {}'.format(sols))
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
