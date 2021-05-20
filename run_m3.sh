@@ -5,7 +5,7 @@ function m3 {
   # gcc mba.c -o xmba
   # ./xmba > mba.tcs
   # ./run_dig.sh mba.tcs
-  sage -python -O src/driver/m3.py -- $1
+  sage -python -O src/driver/m3.py -- "$@"
 }
 
 time m3 $1
