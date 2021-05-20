@@ -25,7 +25,7 @@ int main() {
 
     e2 = -x + 10*(x&y&z) + 2*(x&z) - 11*(y&z) + 10*z + 10; // M3
 
-    if (e1 != e2) printf("ERR: %i, %i, %i: %i != %i\n", x, y, z, e1, e2);
+    if (e != e2) printf("ERR: %i, %i, %i: %i != %i\n", x, y, z, e, e2);
     // else printf("e1 = %i; e2 = %i", e1, e2);
 
     printf("vtrace1: %i, %i, %i, %i, %i, %i, %i, %i\n", x, y, z, x&y, x&z, y&z, x&y&z, e);

@@ -2,9 +2,13 @@ from pathlib import Path
 from functools import partial
 
 N_TRACES = 50
-BASE = 20
+BASE = 50
 
 MAIN_TRACE_NAME = "main"
+MBA_NAME = "mba"
+MBA_C = MBA_NAME + '.c'
+MBA_EXE = MBA_NAME + '.exe'
+MBA_TCS = MBA_NAME + '.tcs'
 
 M3_DIR = Path(__file__).parent
 SRC_DIR = M3_DIR.parent

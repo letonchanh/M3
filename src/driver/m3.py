@@ -87,6 +87,7 @@ class Miscs(dig_miscs.Miscs):
 
         parent = dig_miscs.Miscs
 
+        # mba_expr = unk_1*x + ...
         terms = parent.get_terms([sage.all.var(v) for v in vs if v != mba_vname], deg) + [mba_var]
 
         template, uks = parent.mk_template(terms, 0, retCoefVars=True)
@@ -117,8 +118,7 @@ if __name__ == "__main__":
 
     aparser = argparse.ArgumentParser("M3")
     ag = aparser.add_argument
-    ag("inp",
-       help=("input MBA expression"))
+    ag("inp", type=str, help=("input MBA expression"))
 
     # Generate a program from the input MBA
     args = aparser.parse_args()
@@ -129,10 +129,10 @@ if __name__ == "__main__":
     subprocess.run(gen_prog_cmd, capture_output=True, check=True, text=True)
 
     # Compile and run the program to get traces
-    compile_cmd = config.COMPILE(filename='mba.c', tmpfile='mba.exe')
+    compile_cmd = config.COMPILE(filename=config.MBA_C, tmpfile=config.MBA_EXE)
     subprocess.run(shlex.split(compile_cmd), capture_output=True, check=True, text=True)
-    with open('mba.tcs', 'w') as f:
-        subprocess.call(['./mba.exe'], stdout=f)
+    with open(config.MBA_TCS, 'w') as f:
+        subprocess.call(['./' + config.MBA_EXE], stdout=f)
         
     dig_settings.DO_EQTS = True
     dig_settings.DO_IEQS = False
