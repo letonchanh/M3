@@ -116,7 +116,7 @@ if __name__ == "__main__":
     import argparse
     import config
 
-    aparser = argparse.ArgumentParser("M3")
+    aparser = argparse.ArgumentParser("M3", prefix_chars='@')
     ag = aparser.add_argument
     ag("inp", type=str, help=("input MBA expression"))
 
