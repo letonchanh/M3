@@ -23,7 +23,7 @@ import sage.all
 from helpers.z3utils import Z3
 import z3
 
-mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
+mlog = dig_vcommon.getLogger(__name__, logging.DEBUG)
 mba_vname = "mba"
 mba_var = sage.all.var(mba_vname)
 bv_size = 32
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     seed = round(time.time(), 2)
 
     # Override Dig's init_terms
-    dig_miscs.Miscs.init_terms = Miscs.init_terms
+    dig_miscs.Miscs.init_terms = Miscs.init_terms # To check (x&y) + 1
     solver = dig_alg.DigTraces(inp, None)
     # sys.setprofile(trace_func)
     dinvs = solver.start(seed=seed, maxdeg=2)
