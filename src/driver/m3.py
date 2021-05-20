@@ -4,6 +4,8 @@ import os
 import time
 import operator
 import ast
+import shlex
+import subprocess
 from pathlib import Path
 from types import FrameType
 from functools import reduce
@@ -25,13 +27,12 @@ mlog = dig_vcommon.getLogger(__name__, logging.CRITICAL)
 mba_vname = "mba"
 mba_var = sage.all.var(mba_vname)
 bv_size = 32
-bv_ops = ['AND', 'OR', 'NOT']
+bv_ops = ['AND', 'OR', 'XOR', 'NOT']
 
 class Z3Tranformer(ast.NodeTransformer):
     def parse_id(self, s):
         vs = [z3.BitVec(v, bv_size) for v in s.split('_') if v not in bv_ops]
         return reduce(operator.and_, vs)
-        
 
     def visit_Name(self, node: ast.Name):
         return self.parse_id(str(node.id))
@@ -99,10 +100,8 @@ class Miscs(dig_miscs.Miscs):
     def parse_to_bv(cls, s, num_bits):
         node = ast.parse(s)
         node = node.body[0].value
-        print(ast.dump(node))
         z3_trans = Z3Tranformer()
         node = z3_trans.visit(node)
-        print(node)
         return node
 
 def trace_func(frame: FrameType, event: str, arg):
@@ -113,12 +112,34 @@ def trace_func(frame: FrameType, event: str, arg):
     return trace_func
 
 if __name__ == "__main__":
+    import argparse
+    import config
+
+    aparser = argparse.ArgumentParser("M3")
+    ag = aparser.add_argument
+    ag("inp",
+       help=("input MBA expression"))
+
+    # Generate a program from the input MBA
+    args = aparser.parse_args()
+    mba_inp = args.inp
+    # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
+    # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
+    gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]
+    subprocess.run(gen_prog_cmd, capture_output=True, check=True, text=True)
+
+    # Compile and run the program to get traces
+    compile_cmd = config.COMPILE(filename='mba.c', tmpfile='mba.exe')
+    subprocess.run(shlex.split(compile_cmd), capture_output=True, check=True, text=True)
+    with open('mba.tcs', 'w') as f:
+        subprocess.call(['./mba.exe'], stdout=f)
+        
     dig_settings.DO_EQTS = True
     dig_settings.DO_IEQS = False
     dig_settings.DO_MINMAXPLUS = False
     dig_settings.DO_PREPOSTS = False
 
-    inp = Path("../../mba.tcs")
+    inp = Path("./mba.tcs")
     seed = round(time.time(), 2)
 
     # Override Dig's init_terms
@@ -126,11 +147,12 @@ if __name__ == "__main__":
     solver = dig_alg.DigTraces(inp, None)
     # sys.setprofile(trace_func)
     dinvs = solver.start(seed=seed, maxdeg=2)
-    invs = dinvs["main"]
-    rss = (inv.inv.solve(mba_var) for inv in invs)
-    sols = set([r.rhs() for rs in rss for r in rs])
-    sols = [Miscs.parse_to_bv(str(sol), bv_size) for sol in sols]
-    print('Solutions: {}'.format(sols))
+    if config.MAIN_TRACE_NAME in dinvs:
+        invs = dinvs[config.MAIN_TRACE_NAME]
+        rss = (inv.inv.solve(mba_var) for inv in invs)
+        sols = set([r.rhs() for rs in rss for r in rs])
+        sols = [Miscs.parse_to_bv(str(sol), bv_size) for sol in sols]
+        print('Solutions: {}'.format(sols))
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())

@@ -7,7 +7,7 @@ module L = List
 module S = String
 module CM = Common
       
-let template = "src/genprog/template.c"
+let template = Filename.dirname(Sys.argv.(0)) ^ "/src/genprog/template.c"
 let mba_src = "mba.c"
 let rand_fname = "rand"
 
