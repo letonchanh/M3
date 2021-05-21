@@ -6,6 +6,7 @@ import operator
 import ast
 import shlex
 import subprocess
+import z3
 from pathlib import Path
 from types import FrameType
 from functools import reduce
@@ -20,25 +21,23 @@ import settings as dig_settings
 import helpers.miscs as dig_miscs
 import helpers.vcommon as dig_vcommon
 import sage.all
+import config
 from helpers.z3utils import Z3
-import z3
 
 mlog = dig_vcommon.getLogger(__name__, logging.DEBUG)
-mba_vname = "mba"
-mba_var = sage.all.var(mba_vname)
-bv_size = 32
+mba_var = sage.all.var(config.MBA_NAME)
 bv_ops = ['AND', 'OR', 'XOR', 'NOT']
 
 class Z3Tranformer(ast.NodeTransformer):
     def parse_id(self, s):
-        vs = [z3.BitVec(v, bv_size) for v in s.split('_') if v not in bv_ops]
+        vs = [z3.BitVec(v, config.BV_SIZE) for v in s.split('_') if v not in bv_ops]
         return reduce(operator.and_, vs)
 
     def visit_Name(self, node: ast.Name):
         return self.parse_id(str(node.id))
 
     def visit_Num(self, node: ast.Name):
-        return z3.BitVecVal(str(node.n), bv_size)
+        return z3.BitVecVal(str(node.n), config.BV_SIZE)
 
     def visit_Add(self, node: ast.Add):
         return operator.add
@@ -88,7 +87,7 @@ class Miscs(dig_miscs.Miscs):
         parent = dig_miscs.Miscs
 
         # mba_expr = unk_1*x + ...
-        terms = parent.get_terms([sage.all.var(v) for v in vs if v != mba_vname], deg) + [mba_var]
+        terms = parent.get_terms([sage.all.var(v) for v in vs if v != config.MBA_NAME], deg) + [mba_var]
 
         template, uks = parent.mk_template(terms, 0, retCoefVars=True)
         
@@ -114,7 +113,6 @@ def trace_func(frame: FrameType, event: str, arg):
 
 if __name__ == "__main__":
     import argparse
-    import config
 
     # aparser = argparse.ArgumentParser("M3", prefix_chars='@')
     aparser = argparse.ArgumentParser("M3")
@@ -127,8 +125,6 @@ if __name__ == "__main__":
     args = aparser.parse_args()
     mba_inp = ''.join(args.inp)
     config.setup(config, args)
-    print(config.BASE)
-    print(config.N_TRACES)
     # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
     # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
     gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]
@@ -145,7 +141,7 @@ if __name__ == "__main__":
     dig_settings.DO_MINMAXPLUS = False
     dig_settings.DO_PREPOSTS = False
 
-    inp = Path("./mba.tcs")
+    inp = Path("./" + config.MBA_TCS)
     seed = round(time.time(), 2)
 
     # Override Dig's init_terms
@@ -157,7 +153,7 @@ if __name__ == "__main__":
         invs = dinvs[config.MAIN_TRACE_NAME]
         rss = (inv.inv.solve(mba_var) for inv in invs)
         sols = set([r.rhs() for rs in rss for r in rs])
-        sols = [Miscs.parse_to_bv(str(sol), bv_size) for sol in sols]
+        sols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
         print('Solutions: {}'.format(sols))
         
     # sys.setprofile(None)

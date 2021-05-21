@@ -3,6 +3,7 @@ from functools import partial
 
 N_TRACES = 50
 BASE = 50
+BV_SIZE = 32
 
 MAIN_TRACE_NAME = "main"
 MBA_NAME = "mba"
