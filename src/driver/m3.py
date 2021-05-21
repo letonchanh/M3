@@ -120,10 +120,15 @@ if __name__ == "__main__":
     aparser = argparse.ArgumentParser("M3")
     ag = aparser.add_argument
     ag("inp", type=str, help=("input MBA expression"), nargs='+')
+    ag("--n", "-n", type=int, default=50, help="numbers of random inputs")
+    ag("--base", "-b", type=int, default=50, help="range of random inputs")
 
     # Generate a program from the input MBA
     args = aparser.parse_args()
     mba_inp = ''.join(args.inp)
+    config.setup(config, args)
+    print(config.BASE)
+    print(config.N_TRACES)
     # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
     # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
     gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]

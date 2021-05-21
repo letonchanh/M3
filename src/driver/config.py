@@ -22,3 +22,9 @@ COMPILE = "{compiler} {filename} -o {tmpfile}"
 COMPILE = partial(COMPILE.format, compiler=GCC_CMD)
 RUN_PROG = "{exe}"
 RUN_PROG = partial(RUN_PROG.format)
+
+def setup(config, args):
+    if args.n:
+        config.N_TRACES = args.n
+    if args.base:
+        config.BASE = args.base
