@@ -5,6 +5,8 @@ N_TRACES = 50
 BASE = 50
 BV_SIZE = 32
 
+GROUND_TRUTH = None
+
 MAIN_TRACE_NAME = "main"
 MBA_NAME = "mba"
 MBA_C = MBA_NAME + '.c'
@@ -29,3 +31,5 @@ def setup(config, args):
         config.N_TRACES = args.n
     if args.base:
         config.BASE = args.base
+    if args.ground_truth:
+        config.GROUND_TRUTH = args.ground_truth

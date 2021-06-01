@@ -117,9 +117,10 @@ if __name__ == "__main__":
     # aparser = argparse.ArgumentParser("M3", prefix_chars='@')
     aparser = argparse.ArgumentParser("M3")
     ag = aparser.add_argument
-    ag("inp", type=str, help=("input MBA expression"), nargs='+')
+    ag("inp", type=str, help="input MBA expression", nargs='+')
     ag("--n", "-n", type=int, default=50, help="numbers of random inputs")
     ag("--base", "-b", type=int, default=50, help="range of random inputs")
+    ag("--ground-truth", "-g", type=str, default=None, help="ground truth of the MBA expression")
 
     # Generate a program from the input MBA
     args = aparser.parse_args()
@@ -155,6 +156,9 @@ if __name__ == "__main__":
         sols = set([r.rhs() for rs in rss for r in rs])
         sols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
         print('Solutions: {}'.format(sols))
+
+        if config.GROUND_TRUTH:
+            print(config.GROUND_TRUTH)
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
