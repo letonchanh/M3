@@ -32,7 +32,7 @@ def run_m3(datafile, iter, base):
         iter: loop iterration, the leng of trace that is going to be generated.
         base: variable bit-vector length base, that is the vaule range.
     """
-    filewrite = "{source}.results.m3".format(source=datafile)
+    filewrite = "{source}.results.validate.m3".format(source=datafile)
 
     fw = open(filewrite, "w")
     print("#Dig simpify results, iteration=%s, range base=%s" % (iter, base), file=fw)
@@ -49,7 +49,8 @@ def run_m3(datafile, iter, base):
                # print("------------------------------------------", file=fw)
                 print("--------%s------------"% str(linenum))
                 fw.write("----------%s----------" % str(linenum))
-                cmd = ["./run_m3.sh", cmba, str(iter), str(base)]
+                m3args = "--n {0} -b {1} --ground-truth='{2}' -- '{3}'".format(iter, base, groundtruth, cmba)
+                cmd = ["./run_m3.sh", m3args]
                 res= run_command(cmd)
                 print(res.decode('utf-8'))
                 fw.write(res.decode('utf-8'))
