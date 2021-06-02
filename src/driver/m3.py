@@ -166,6 +166,8 @@ if __name__ == "__main__":
                 res = solver.check()
                 if res == z3.unsat:
                     validated_zsols.append(zsol)
+                elif res == z3.sat:
+                    print('cex: {}'.format(solver.model()))
                 solver.reset()
             print('(Validated) Solutions: {}'.format(validated_zsols))
         

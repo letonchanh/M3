@@ -30,6 +30,6 @@ def setup(config, args):
     if args.n:
         config.N_TRACES = args.n
     if args.base:
-        config.BASE = args.base
+        config.BASE = max(args.base, config.BV_SIZE)
     if args.ground_truth:
         config.GROUND_TRUTH = args.ground_truth
