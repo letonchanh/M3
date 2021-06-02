@@ -98,7 +98,7 @@ class Miscs(dig_miscs.Miscs):
 
     @classmethod
     def parse_to_bv(cls, s, num_bits):
-        node = ast.parse(s)
+        node = ast.parse(s.strip())
         node = node.body[0].value
         z3_trans = Z3Tranformer()
         node = z3_trans.visit(node)
