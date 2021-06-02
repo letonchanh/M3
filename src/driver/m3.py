@@ -154,11 +154,20 @@ if __name__ == "__main__":
         invs = dinvs[config.MAIN_TRACE_NAME]
         rss = (inv.inv.solve(mba_var) for inv in invs)
         sols = set([r.rhs() for rs in rss for r in rs])
-        sols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
-        print('Solutions: {}'.format(sols))
+        zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
+        print('(Unvalidated) Solutions: {}'.format(zsols))
 
         if config.GROUND_TRUTH:
-            print(config.GROUND_TRUTH)
+            zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
+            validated_zsols = []
+            solver = z3.Solver()
+            for zsol in zsols:
+                solver.add(zsol != zgt)
+                res = solver.check()
+                if res == z3.unsat:
+                    validated_zsols.append(zsol)
+                solver.reset()
+            print('(Validated) Solutions: {}'.format(validated_zsols))
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
