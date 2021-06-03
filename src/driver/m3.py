@@ -36,6 +36,8 @@ if __name__ == "__main__":
     mba_inp = ''.join(args.inp)
     config.setup(config, args)
 
+    if config.USE_TCS:
+        
     infer.run(mba_inp)
         
     # sys.setprofile(None)

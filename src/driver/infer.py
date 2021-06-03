@@ -8,6 +8,7 @@ import shlex
 import time
 from functools import reduce
 from pathlib import Path
+from abc import ABCMeta, abstractmethod
 
 import settings as dig_settings
 import helpers.miscs as dig_miscs
@@ -96,32 +97,21 @@ class Miscs(dig_miscs.Miscs):
         node = z3_trans.visit(node)
         return node
 
-def run(mba_inp):
-    dig_settings.DO_EQTS = True
-    dig_settings.DO_IEQS = False
-    dig_settings.DO_MINMAXPLUS = False
-    dig_settings.DO_PREPOSTS = False
-    # Override Dig's init_terms
-    dig_miscs.Miscs.init_terms = Miscs.init_terms # To check (x&y) + 1
+class DInfer(metaclass=ABCMeta):
+    def __init__(self):
+        dig_settings.DO_EQTS = True
+        dig_settings.DO_IEQS = False
+        dig_settings.DO_MINMAXPLUS = False
+        dig_settings.DO_PREPOSTS = False
+        # Override Dig's init_terms
+        dig_miscs.Miscs.init_terms = Miscs.init_terms # To check (x&y) + 1
 
-    if config.USE_TCS:
-        # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
-        # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
-        gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]
-        subprocess.run(gen_prog_cmd, capture_output=True, check=True, text=True)
+    @abstractmethod
+    def get_invs(self, mba_inp):
+        pass
 
-        # Compile and run the program to get traces
-        compile_cmd = config.COMPILE(filename=config.MBA_C, tmpfile=config.MBA_EXE)
-        subprocess.run(shlex.split(compile_cmd), capture_output=True, check=True, text=True)
-        with open(config.MBA_TCS, 'w') as f:
-            subprocess.call(['./' + config.MBA_EXE], stdout=f)
-
-        inp = Path("./" + config.MBA_TCS)
-        seed = round(time.time(), 2)
-        solver = dig_alg.DigTraces(inp, None)
-        # sys.setprofile(trace_func)
-        dinvs = solver.start(seed=seed, maxdeg=2)
-
+    def run(self, mba_inp):
+        dinvs = self.get_invs(mba_inp)
         if config.MAIN_TRACE_NAME in dinvs:
             invs = dinvs[config.MAIN_TRACE_NAME]
             rss = (inv.inv.solve(mba_var) for inv in invs)
@@ -142,3 +132,23 @@ def run(mba_inp):
                         print('cex: {}'.format(solver.model()))
                     solver.reset()
                 print('(Validated) Solutions: {}'.format(validated_zsols))
+
+class TCSInfer(DInfer):
+    def get_invs(self, mba_inp):
+        # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
+        # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
+        gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]
+        subprocess.run(gen_prog_cmd, capture_output=True, check=True, text=True)
+
+        # Compile and run the program to get traces
+        compile_cmd = config.COMPILE(filename=config.MBA_C, tmpfile=config.MBA_EXE)
+        subprocess.run(shlex.split(compile_cmd), capture_output=True, check=True, text=True)
+        with open(config.MBA_TCS, 'w') as f:
+            subprocess.call(['./' + config.MBA_EXE], stdout=f)
+
+        inp = Path("./" + config.MBA_TCS)
+        seed = round(time.time(), 2)
+        solver = dig_alg.DigTraces(inp, None)
+        # sys.setprofile(trace_func)
+        dinvs = solver.start(seed=seed, maxdeg=2)
+        return dinvs
