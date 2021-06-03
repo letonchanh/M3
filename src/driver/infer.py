@@ -153,7 +153,7 @@ class DInfer(metaclass=ABCMeta):
             elif invalid_zsols:
                 print('Invalid Solutions: {}'.format(invalid_zsols))
             else:
-                print('Maybe Solutions: {}'.format(maybe_zsols))
+                print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
 
     def validate(self, zgt, zsol):
         tasks = []
@@ -176,11 +176,11 @@ class DInfer(metaclass=ABCMeta):
         # _, dynamic_cex = drs['dynamic']
 
         static_rs, static_cex = _static_f()
-        _, dynamic_cex = _dynamic_f()
 
         if static_rs:
             return True, None
         else:
+            _, dynamic_cex = _dynamic_f()
             return False, static_cex + dynamic_cex
 
     def static_validate(self, zgt, zsol):
