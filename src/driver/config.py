@@ -5,6 +5,8 @@ N_TRACES = 50
 BASE = 50
 BV_SIZE = 32
 
+USE_TCS = False
+
 GROUND_TRUTH = None
 
 MAIN_TRACE_NAME = "main"
@@ -27,9 +29,11 @@ RUN_PROG = "{exe}"
 RUN_PROG = partial(RUN_PROG.format)
 
 def setup(config, args):
+    if args.tcs:
+        config.USE_TCS = args.tcs
     if args.n:
         config.N_TRACES = args.n
     if args.base:
-        config.BASE = max(args.base, config.BV_SIZE)
+        config.BASE = args.base
     if args.ground_truth:
         config.GROUND_TRUTH = args.ground_truth
