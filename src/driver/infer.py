@@ -136,12 +136,23 @@ class DInfer(metaclass=ABCMeta):
 
         if config.GROUND_TRUTH:
             zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
-            validated_zsols = []
+            valid_zsols = []
+            invalid_zsols = []
+            maybe_zsols = []
             for zsol in zsols:
                 r, cex = self.validate(zgt, zsol)
                 if r:
-                    validated_zsols.append(zsol)
-            print('(Validated) Solutions: {}'.format(validated_zsols))
+                    valid_zsols.append(zsol)
+                elif cex:
+                    invalid_zsols.append(zsol)
+                else:
+                    maybe_zsols.append(zsol)
+            if valid_zsols:
+                print('Valid Solutions: {}'.format(valid_zsols))
+            elif invalid_zsols:
+                print('Invalid Solutions: {}'.format(invalid_zsols))
+            else:
+                print('Maybe Solutions: {}'.format(maybe_zsols))
 
     def validate(self, zgt, zsol):
         tasks = []
@@ -158,9 +169,14 @@ class DInfer(metaclass=ABCMeta):
         def f(tasks):
             rs = [(s, _f()) for (s, _f) in tasks]
             return rs
-        # wrs = dig_miscs.MP.run_mp("m3_validation", tasks, f, False)
-        # print(wrs)
-        return _static_f()
+        wrs = dig_miscs.MP.run_mp("m3_validation", tasks, f, True)
+        drs = dict(wrs)
+        static_rs, static_cex = drs['static']
+        dynamic_rs, dynamic_cex = drs['dynamic'] 
+        if static_rs:
+            return True, None
+        else:
+            return False, static_cex + dynamic_cex
 
     def static_validate(self, zgt, zsol):
         # z3.set_param("timeout", 10000) 
@@ -174,7 +190,7 @@ class DInfer(metaclass=ABCMeta):
             cex = solver.model()
             return False, cex
         else:
-            return True, None
+            return False, [] # unknown
 
     def dynamic_validate(self, zgt, zsol):
         cex = []
@@ -189,7 +205,7 @@ class DInfer(metaclass=ABCMeta):
         if cex:
             return False, cex
         else:
-            return False, None # unknown
+            return False, [] # unknown
 
 class TcsInfer(DInfer):
     def get_invs(self, mba_inp):
