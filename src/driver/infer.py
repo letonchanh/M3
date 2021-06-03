@@ -1,7 +1,8 @@
 import ast
+import sys
 from itertools import chain, combinations
 import operator
-from random import randrange, seed
+from random import randrange, randint, seed
 import tempfile
 from data.inv.invs import DInvs
 import z3
@@ -121,7 +122,12 @@ class DInfer(metaclass=ABCMeta):
     def get_invs(self, mba_inp):
         pass
 
+    def fv(self, mba_inp):
+        return set([node.id for node in ast.walk(ast.parse(mba_inp))
+                    if type(node) is ast.Name])
+
     def run(self, mba_inp):
+        self.vars = self.fv(mba_inp)
         invs = self.get_invs(mba_inp)
         rss = (inv.inv.solve(mba_var) for inv in invs)
         sols = set([r.rhs() for rs in rss for r in rs])
@@ -131,18 +137,59 @@ class DInfer(metaclass=ABCMeta):
         if config.GROUND_TRUTH:
             zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
             validated_zsols = []
-            solver = z3.Solver()
             for zsol in zsols:
-                solver.add(zsol != zgt)
-                res = solver.check()
-                if res == z3.unsat:
+                r, cex = self.validate(zgt, zsol)
+                if r:
                     validated_zsols.append(zsol)
-                elif res == z3.sat:
-                    print('cex: {}'.format(solver.model()))
-                solver.reset()
             print('(Validated) Solutions: {}'.format(validated_zsols))
+
+    def validate(self, zgt, zsol):
+        tasks = []
+        
+        def _static_f():
+            return self.static_validate(zgt, zsol)
+
+        def _dynamic_f():
+            return self.dynamic_validate(zgt, zsol)
+        
+        tasks.append(("static", _static_f))
+        tasks.append(("dynamic", _dynamic_f))
+        
+        def f(tasks):
+            rs = [(s, _f()) for (s, _f) in tasks]
+            return rs
+        # wrs = dig_miscs.MP.run_mp("m3_validation", tasks, f, False)
+        # print(wrs)
+        return _static_f()
+
+    def static_validate(self, zgt, zsol):
+        # z3.set_param("timeout", 10000) 
+        # solver = z3.Solver()
+        solver = z3.TryFor(z3.Tactic('qfbv'), 1000).solver()
+        solver.add(zsol != zgt)
+        res = solver.check()
+        if res == z3.unsat:
+            return True, None
+        elif res == z3.sat:
+            cex = solver.model()
+            return False, cex
         else:
-            print('No solutions')
+            return True, None
+
+    def dynamic_validate(self, zgt, zsol):
+        cex = []
+        for i in range(10 * config.N_TRACES):
+            seed(i)
+            lcls = {var: randint(-pow(2, config.BV_SIZE - 1) - 1, pow(2, config.BV_SIZE - 1)) 
+                    for var in self.vars}
+            vgt = eval(str(zgt), {}, lcls)
+            vsol = eval(str(zsol), {}, lcls)
+            if (vgt != vsol):
+                cex.append(lcls)
+        if cex:
+            return False, cex
+        else:
+            return False, None # unknown
 
 class TcsInfer(DInfer):
     def get_invs(self, mba_inp):
@@ -166,8 +213,7 @@ class TcsInfer(DInfer):
 
 class PyInfer(DInfer):
     def get_invs(self, mba_inp):
-        vars = set([node.id for node in ast.walk(ast.parse(mba_inp))
-                    if type(node) is ast.Name])
+        vars = self.vars
         var_ps = list(Miscs.powerset(vars))
         ss = [reduce(lambda x, y: x + '_AND_' + y, vars) for vars in var_ps]
         ss.append(config.MBA_NAME)
