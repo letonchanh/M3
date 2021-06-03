@@ -122,27 +122,25 @@ class DInfer(metaclass=ABCMeta):
         pass
 
     def run(self, mba_inp):
-        dinvs = self.get_invs(mba_inp)
-        if config.MAIN_TRACE_NAME in dinvs:
-            invs = dinvs[config.MAIN_TRACE_NAME]
-            rss = (inv.inv.solve(mba_var) for inv in invs)
-            sols = set([r.rhs() for rs in rss for r in rs])
-            zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
-            print('(Unvalidated) Solutions: {}'.format(zsols))
+        invs = self.get_invs(mba_inp)
+        rss = (inv.inv.solve(mba_var) for inv in invs)
+        sols = set([r.rhs() for rs in rss for r in rs])
+        zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
+        print('(Unvalidated) Solutions: {}'.format(zsols))
 
-            if config.GROUND_TRUTH:
-                zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
-                validated_zsols = []
-                solver = z3.Solver()
-                for zsol in zsols:
-                    solver.add(zsol != zgt)
-                    res = solver.check()
-                    if res == z3.unsat:
-                        validated_zsols.append(zsol)
-                    elif res == z3.sat:
-                        print('cex: {}'.format(solver.model()))
-                    solver.reset()
-                print('(Validated) Solutions: {}'.format(validated_zsols))
+        if config.GROUND_TRUTH:
+            zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
+            validated_zsols = []
+            solver = z3.Solver()
+            for zsol in zsols:
+                solver.add(zsol != zgt)
+                res = solver.check()
+                if res == z3.unsat:
+                    validated_zsols.append(zsol)
+                elif res == z3.sat:
+                    print('cex: {}'.format(solver.model()))
+                solver.reset()
+            print('(Validated) Solutions: {}'.format(validated_zsols))
         else:
             print('No solutions')
 
@@ -164,7 +162,7 @@ class TcsInfer(DInfer):
         solver = dig_alg.DigTraces(inp, None)
         # sys.setprofile(trace_func)
         dinvs = solver.start(seed=sd, maxdeg=2)
-        return dinvs
+        return dinvs[config.MAIN_TRACE_NAME]
 
 class PyInfer(DInfer):
     def get_invs(self, mba_inp):
@@ -192,5 +190,5 @@ class PyInfer(DInfer):
         solver.inv_decls = dsyms
         solver.dtraces = dtraces
         invs = solver.infer_eqts(maxdeg=2, symbols=syms, traces=dtraces[config.MAIN_TRACE_NAME])
-        dinvs = DInvs([(config.MAIN_TRACE_NAME, invs)])
-        return dinvs
+        # dinvs = DInvs([(config.MAIN_TRACE_NAME, invs)])
+        return invs
