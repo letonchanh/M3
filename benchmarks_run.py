@@ -20,11 +20,12 @@ class Tool(Enum):
 
 def run_command(command):
     try:
-        p = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60.0)
+        p = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180.0)
     except subprocess.TimeoutExpired as e_timeout:
-        error = "-----Time Out(60s)----\n"
+        error = "-----Time Out(180s)----\n"
         return error.encode('utf-8')
     return p.stdout
+
 def run_m3(datafile, iter, base):
     """run M3 on mba-sovler dataset.
     Args:
@@ -33,11 +34,13 @@ def run_m3(datafile, iter, base):
         base: variable bit-vector length base, that is the vaule range.
     """
     filewrite = "{source}.results.validate.m3".format(source=datafile)
-
+    filetimeout ="{source}.results.timeout.m3".format(source=datafile)
     fw = open(filewrite, "w")
     print("#Dig simpify results, iteration=%s, range base=%s" % (iter, base), file=fw)
+    fw1= open(filetimeout, "w")
+    print("#Timed Out MBA Expressions, iteration=%s, range base=%s" % (iter, base), file=fw1)
     linenum = 0
-    with open(datafile, "rt") as fr:
+    with open(datafile, "rt") as fr: 
         for line in fr:
             if "#" not in line:
                 linenum += 1
@@ -48,12 +51,19 @@ def run_m3(datafile, iter, base):
               #  res=subprocess.run(["./run_m3.sh", cmba, str(iter), str(base)], stdout=subprocess.PIPE)
                # print("------------------------------------------", file=fw)
                 print("--------%s------------"% str(linenum))
-                fw.write("----------%s----------" % str(linenum))
+                fw.write("----------%s: %s----------\n" % (str(linenum),line))
                 m3args = "--n {0} -b {1} --ground-truth='{2}' -- '{3}'".format(iter, base, groundtruth, cmba)
                 cmd = ["./run_m3.sh", m3args]
                 res= run_command(cmd)
                 print(res.decode('utf-8'))
                 fw.write(res.decode('utf-8'))
+                if "Time Out" in res.decode('utf-8'):
+                    fw1.write(line+'\n')
+    fr.close()
+    fw.close()
+    fw1.close()
+
+
 # run on SSPAM
 def run_sspam(datafile, base):
     filewrite = "{source}.results.sspam".format(source=datafile)
@@ -74,6 +84,8 @@ def run_sspam(datafile, base):
                 res= run_command(cmd)
                 print(res.decode('utf-8'))
                 fw.write(res.decode('utf-8'))
+    fr.close()
+        
 
 
 def main(tool, fileread, iter_num, bit_num):
