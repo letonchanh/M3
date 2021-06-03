@@ -2,6 +2,8 @@ import ast
 from itertools import chain, combinations
 import operator
 from random import randrange, seed
+import tempfile
+from data.inv.invs import DInvs
 import z3
 import sage.all
 import logging
@@ -16,6 +18,8 @@ import settings as dig_settings
 import helpers.miscs as dig_miscs
 import helpers.vcommon as dig_vcommon
 import alg as dig_alg
+from data.traces import DTraces, Trace, Traces
+from data.prog import Symb, Symbs, DSymbs
 
 import config
 
@@ -164,15 +168,29 @@ class TcsInfer(DInfer):
 
 class PyInfer(DInfer):
     def get_invs(self, mba_inp):
-        vs = set([node.id for node in ast.walk(ast.parse(mba_inp))
-                  if type(node) is ast.Name])
-        vps = list(Miscs.powerset(vs))
-        print(vps)
+        vars = set([node.id for node in ast.walk(ast.parse(mba_inp))
+                    if type(node) is ast.Name])
+        var_ps = list(Miscs.powerset(vars))
+        ss = [reduce(lambda x, y: x + '_AND_' + y, vars) for vars in var_ps]
+        ss.append(config.MBA_NAME)
+        dtraces = DTraces()
         for i in range(config.N_TRACES):
             seed(i)
-            lcls = {v: randrange(config.BASE) for v in vs}
-            term_vals = [reduce(lambda x, y: x & y, map(lambda x: lcls[x], vs)) for vs in vps]
+            lcls = {var: randrange(config.BASE) for var in vars}
+            vs = [reduce(lambda x, y: x & y, map(lambda x: lcls[x], vars)) for vars in var_ps]
             mba_val = eval(mba_inp, {}, lcls)
-            s = ', '.join([str(tv) for tv in term_vals]) + ', ' + str(mba_val)
-            print(s)
-        return []
+            vs.append(mba_val)
+            trace = Trace(tuple(ss), tuple(vs))
+            dtraces.add(config.MAIN_TRACE_NAME, trace)
+        # print(traces.__str__(printDetails=True))
+        
+        syms = Symbs([Symb(s, 'I') for s in ss])
+        dsyms = DSymbs()
+        dsyms[config.MAIN_TRACE_NAME] = syms
+        _, path = tempfile.mkstemp()
+        solver = dig_alg.DigTraces(Path(path), None)
+        solver.inv_decls = dsyms
+        solver.dtraces = dtraces
+        invs = solver.infer_eqts(maxdeg=2, symbols=syms, traces=dtraces[config.MAIN_TRACE_NAME])
+        dinvs = DInvs([(config.MAIN_TRACE_NAME, invs)])
+        return dinvs
