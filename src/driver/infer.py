@@ -23,6 +23,7 @@ from data.traces import DTraces, Trace, Traces
 from data.prog import Symb, Symbs, DSymbs
 
 import config
+from z3.z3 import solve
 
 mlog = dig_vcommon.getLogger(__name__, logging.DEBUG)
 mba_var = sage.all.var(config.MBA_NAME)
@@ -144,7 +145,7 @@ class DInfer(metaclass=ABCMeta):
                 if r:
                     valid_zsols.append(zsol)
                 elif cex:
-                    invalid_zsols.append(zsol)
+                    invalid_zsols.append((zsol, cex))
                 else:
                     maybe_zsols.append(zsol)
             if valid_zsols:
@@ -169,10 +170,14 @@ class DInfer(metaclass=ABCMeta):
         def f(tasks):
             rs = [(s, _f()) for (s, _f) in tasks]
             return rs
-        wrs = dig_miscs.MP.run_mp("m3_validation", tasks, f, True)
-        drs = dict(wrs)
-        static_rs, static_cex = drs['static']
-        dynamic_rs, dynamic_cex = drs['dynamic'] 
+        # wrs = dig_miscs.MP.run_mp("m3_validation", tasks, f, False)
+        # drs = dict(wrs)
+        # static_rs, static_cex = drs['static']
+        # _, dynamic_cex = drs['dynamic']
+
+        static_rs, static_cex = _static_f()
+        _, dynamic_cex = _dynamic_f()
+
         if static_rs:
             return True, None
         else:
@@ -187,8 +192,9 @@ class DInfer(metaclass=ABCMeta):
         if res == z3.unsat:
             return True, None
         elif res == z3.sat:
-            cex = solver.model()
-            return False, cex
+            m = solver.model()
+            cex = {str(v): m[v] for v in m.decls()}
+            return False, [cex]
         else:
             return False, [] # unknown
 
