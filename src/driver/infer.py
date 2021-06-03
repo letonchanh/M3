@@ -1,5 +1,7 @@
 import ast
+from itertools import chain, combinations
 import operator
+from random import randrange, seed
 import z3
 import sage.all
 import logging
@@ -8,7 +10,7 @@ import shlex
 import time
 from functools import reduce
 from pathlib import Path
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 import settings as dig_settings
 import helpers.miscs as dig_miscs
@@ -97,6 +99,12 @@ class Miscs(dig_miscs.Miscs):
         node = z3_trans.visit(node)
         return node
 
+    @classmethod
+    def powerset(cls, iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
+
 class DInfer(metaclass=ABCMeta):
     def __init__(self):
         dig_settings.DO_EQTS = True
@@ -106,7 +114,6 @@ class DInfer(metaclass=ABCMeta):
         # Override Dig's init_terms
         dig_miscs.Miscs.init_terms = Miscs.init_terms # To check (x&y) + 1
 
-    @abstractmethod
     def get_invs(self, mba_inp):
         pass
 
@@ -132,8 +139,10 @@ class DInfer(metaclass=ABCMeta):
                         print('cex: {}'.format(solver.model()))
                     solver.reset()
                 print('(Validated) Solutions: {}'.format(validated_zsols))
+        else:
+            print('No solutions')
 
-class TCSInfer(DInfer):
+class TcsInfer(DInfer):
     def get_invs(self, mba_inp):
         # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
         # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
@@ -147,8 +156,23 @@ class TCSInfer(DInfer):
             subprocess.call(['./' + config.MBA_EXE], stdout=f)
 
         inp = Path("./" + config.MBA_TCS)
-        seed = round(time.time(), 2)
+        sd = round(time.time(), 2)
         solver = dig_alg.DigTraces(inp, None)
         # sys.setprofile(trace_func)
-        dinvs = solver.start(seed=seed, maxdeg=2)
+        dinvs = solver.start(seed=sd, maxdeg=2)
         return dinvs
+
+class PyInfer(DInfer):
+    def get_invs(self, mba_inp):
+        vs = set([node.id for node in ast.walk(ast.parse(mba_inp))
+                  if type(node) is ast.Name])
+        vps = list(Miscs.powerset(vs))
+        print(vps)
+        for i in range(config.N_TRACES):
+            seed(i)
+            lcls = {v: randrange(config.BASE) for v in vs}
+            term_vals = [reduce(lambda x, y: x & y, map(lambda x: lcls[x], vs)) for vs in vps]
+            mba_val = eval(mba_inp, {}, lcls)
+            s = ', '.join([str(tv) for tv in term_vals]) + ', ' + str(mba_val)
+            print(s)
+        return []

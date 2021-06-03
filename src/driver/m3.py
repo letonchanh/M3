@@ -37,8 +37,11 @@ if __name__ == "__main__":
     config.setup(config, args)
 
     if config.USE_TCS:
-        
-    infer.run(mba_inp)
+        inf = infer.TcsInfer()
+    else:
+        inf = infer.PyInfer()
+
+    inf.run(mba_inp)
         
     # sys.setprofile(None)
     dig.killchildren(os.getpid())
