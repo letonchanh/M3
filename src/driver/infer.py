@@ -151,7 +151,7 @@ class DInfer(metaclass=ABCMeta):
             if valid_zsols:
                 print('Valid Solutions: {}'.format(valid_zsols))
             elif invalid_zsols:
-                print('Invalid Solutions: {}'.format(invalid_zsols))
+                print('Invalid Solutions: {}'.format([(invalid_sol, len(cex)) for invalid_sol, cex in invalid_zsols]))
             else:
                 print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
 
@@ -186,7 +186,8 @@ class DInfer(metaclass=ABCMeta):
     def static_validate(self, zgt, zsol):
         # z3.set_param("timeout", 10000) 
         # solver = z3.Solver()
-        solver = z3.TryFor(z3.Tactic('qfbv'), 1000).solver()
+        # solver = z3.TryFor(z3.Tactic('qfbv'), 10000).solver()
+        solver = z3.Tactic('qfbv').solver()
         solver.add(zsol != zgt)
         res = solver.check()
         if res == z3.unsat:
@@ -248,6 +249,7 @@ class PyInfer(DInfer):
             vs.append(mba_val)
             trace = Trace(tuple(ss), tuple(vs))
             dtraces.add(config.MAIN_TRACE_NAME, trace)
+        print('Input ratio: {}'.format(len(dtraces[config.MAIN_TRACE_NAME]) / config.N_TRACES))
         # print(traces.__str__(printDetails=True))
         
         syms = Symbs([Symb(s, 'I') for s in ss])
