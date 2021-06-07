@@ -148,6 +148,12 @@ class DInfer(metaclass=ABCMeta):
         invs = self.get_invs_from_traces(dtraces)
         return invs
 
+    def get_zsols_from_invs(self, invs):
+        rss = (inv.inv.solve(mba_var) for inv in invs)
+        sols = set([r.rhs() for rs in rss for r in rs])
+        zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
+        return zsols
+
     def fv(self, mba_inp):
         return set([node.id for node in ast.walk(ast.parse(mba_inp))
                     if type(node) is ast.Name])
@@ -175,9 +181,7 @@ class DInfer(metaclass=ABCMeta):
     def run(self, mba_inp):
         self.setup(mba_inp)
         invs, inp_ratio = self.get_invs()
-        rss = (inv.inv.solve(mba_var) for inv in invs)
-        sols = set([r.rhs() for rs in rss for r in rs])
-        zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
+        zsols = self.get_zsols_from_invs(invs)
         print('(Unvalidated) Solutions: {}'.format(zsols))
 
         if config.GROUND_TRUTH:
@@ -200,6 +204,8 @@ class DInfer(metaclass=ABCMeta):
                 for _, cexs in invalid_zsols:
                     invs = self.get_invs_from_cexs(cexs, inp_ratio)
                     print('Refined Result: {}'.format(invs))
+                    zsols = self.get_zsols_from_invs(invs)
+                    print('(Unvalidated) Refined Solutions: {}'.format(zsols))
             else:
                 print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
 
