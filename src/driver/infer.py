@@ -120,16 +120,61 @@ class DInfer(metaclass=ABCMeta):
         # Override Dig's init_terms
         dig_miscs.Miscs.init_terms = Miscs.init_terms # To check (x&y) + 1
 
-    def get_invs(self, mba_inp):
+    def get_invs(self):
         pass
+
+    def get_invs_from_traces(self, dtraces):
+        dsyms = DSymbs()
+        dsyms[config.MAIN_TRACE_NAME] = self.syms
+        _, path = tempfile.mkstemp()
+        solver = dig_alg.DigTraces(Path(path), None)
+        solver.inv_decls = dsyms
+        solver.dtraces = dtraces
+        invs = solver.infer_eqts(maxdeg=2, symbols=self.syms, traces=dtraces[config.MAIN_TRACE_NAME])
+        # dinvs = DInvs([(config.MAIN_TRACE_NAME, invs)])
+        return invs
+
+    def get_invs_from_cexs(self, cexs, inp_ratio):
+        dtraces = DTraces()
+        if inp_ratio and inp_ratio < 0.5:
+            config.BASE = config.BASE / inp_ratio
+        else:
+            config.BASE = 2 * config.BASE
+        for cex in cexs:
+            trace = self.mk_trace(cex)
+            dtraces.add(config.MAIN_TRACE_NAME, trace)
+        print(dtraces)
+        print('Refinement ratio: {}'.format(len(dtraces[config.MAIN_TRACE_NAME]) / len(cexs)))
+        invs = self.get_invs_from_traces(dtraces)
+        return invs
 
     def fv(self, mba_inp):
         return set([node.id for node in ast.walk(ast.parse(mba_inp))
                     if type(node) is ast.Name])
 
-    def run(self, mba_inp):
+    def mk_trace(self, lcls):
+        vars = self.vars
+        vars_ps = self.vars_ps
+        mba_inp = self.mba_inp
+        ss = self.ss
+        lcls = {var: randrange(config.BASE) for var in vars}
+        vs = [reduce(lambda x, y: x & y, map(lambda x: lcls[x], vars)) for vars in vars_ps]
+        mba_val = eval(mba_inp, {}, lcls)
+        vs.append(mba_val)
+        trace = Trace(tuple(ss), tuple(vs))
+        return trace
+
+    def setup(self, mba_inp):
+        self.mba_inp = mba_inp
         self.vars = self.fv(mba_inp)
-        invs = self.get_invs(mba_inp)
+        self.vars_ps = list(Miscs.powerset(self.vars))
+        self.ss = [reduce(lambda x, y: x + '_AND_' + y, vars) for vars in self.vars_ps]
+        self.ss.append(config.MBA_NAME)
+        self.syms = Symbs([Symb(s, 'I') for s in self.ss])
+
+    def run(self, mba_inp):
+        self.setup(mba_inp)
+        invs, inp_ratio = self.get_invs()
         rss = (inv.inv.solve(mba_var) for inv in invs)
         sols = set([r.rhs() for rs in rss for r in rs])
         zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
@@ -151,7 +196,10 @@ class DInfer(metaclass=ABCMeta):
             if valid_zsols:
                 print('Valid Solutions: {}'.format(valid_zsols))
             elif invalid_zsols:
-                print('Invalid Solutions: {}'.format([(invalid_sol, len(cex)) for invalid_sol, cex in invalid_zsols]))
+                print('Invalid Solutions: {}'.format([(invalid_sol, len(cexs)) for invalid_sol, cexs in invalid_zsols]))
+                for _, cexs in invalid_zsols:
+                    invs = self.get_invs_from_cexs(cexs, inp_ratio)
+                    print('Refined Result: {}'.format(invs))
             else:
                 print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
 
@@ -215,7 +263,8 @@ class DInfer(metaclass=ABCMeta):
             return False, [] # unknown
 
 class TcsInfer(DInfer):
-    def get_invs(self, mba_inp):
+    def get_invs(self):
+        mba_inp = self.mba_inp
         # gen_prog_cmd = config.GEN_PROG(mba=mba_inp, n_traces=config.N_TRACES, base=config.BASE)
         # subprocess.run(shlex.split(gen_prog_cmd), capture_output=True, check=True, text=True)
         gen_prog_cmd = [str(config.GEN_PROG_EXE), mba_inp, str(config.N_TRACES), str(config.BASE)]
@@ -232,33 +281,19 @@ class TcsInfer(DInfer):
         solver = dig_alg.DigTraces(inp, None)
         # sys.setprofile(trace_func)
         dinvs = solver.start(seed=sd, maxdeg=2)
-        return dinvs[config.MAIN_TRACE_NAME]
+        return dinvs[config.MAIN_TRACE_NAME], None
 
 class PyInfer(DInfer):
-    def get_invs(self, mba_inp):
-        vars = self.vars
-        var_ps = list(Miscs.powerset(vars))
-        ss = [reduce(lambda x, y: x + '_AND_' + y, vars) for vars in var_ps]
-        ss.append(config.MBA_NAME)
+    def get_invs(self):
         dtraces = DTraces()
         for i in range(config.N_TRACES):
             seed(i)
-            lcls = {var: randrange(config.BASE) for var in vars}
-            vs = [reduce(lambda x, y: x & y, map(lambda x: lcls[x], vars)) for vars in var_ps]
-            mba_val = eval(mba_inp, {}, lcls)
-            vs.append(mba_val)
-            trace = Trace(tuple(ss), tuple(vs))
+            lcls = {var: randrange(config.BASE) for var in self.vars}
+            trace = self.mk_trace(lcls)
             dtraces.add(config.MAIN_TRACE_NAME, trace)
-        print('Input ratio: {}'.format(len(dtraces[config.MAIN_TRACE_NAME]) / config.N_TRACES))
+        inp_ratio = len(dtraces[config.MAIN_TRACE_NAME]) / config.N_TRACES
+        print('Input ratio: {}'.format(inp_ratio))
         # print(traces.__str__(printDetails=True))
         
-        syms = Symbs([Symb(s, 'I') for s in ss])
-        dsyms = DSymbs()
-        dsyms[config.MAIN_TRACE_NAME] = syms
-        _, path = tempfile.mkstemp()
-        solver = dig_alg.DigTraces(Path(path), None)
-        solver.inv_decls = dsyms
-        solver.dtraces = dtraces
-        invs = solver.infer_eqts(maxdeg=2, symbols=syms, traces=dtraces[config.MAIN_TRACE_NAME])
-        # dinvs = DInvs([(config.MAIN_TRACE_NAME, invs)])
-        return invs
+        invs = self.get_invs_from_traces(dtraces)
+        return invs, inp_ratio
