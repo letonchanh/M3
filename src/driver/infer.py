@@ -189,25 +189,28 @@ class DInfer(metaclass=ABCMeta):
             valid_zsols = []
             invalid_zsols = []
             maybe_zsols = []
-            for zsol in zsols:
-                r, cex = self.validate(zgt, zsol)
-                if r:
-                    valid_zsols.append(zsol)
-                elif cex:
-                    invalid_zsols.append((zsol, cex))
+            iters = 0
+            while zsols and not valid_zsols and iters < config.REFINEMENT_ITERS:
+                for zsol in zsols:
+                    r, cex = self.validate(zgt, zsol)
+                    if r:
+                        valid_zsols.append(zsol)
+                    elif cex:
+                        invalid_zsols.append((zsol, cex))
+                    else:
+                        maybe_zsols.append(zsol)
+                if valid_zsols:
+                    print('Valid Solutions: {}'.format(valid_zsols))
+                elif invalid_zsols:
+                    print('Invalid Solutions: {}'.format([(invalid_sol, len(cexs)) for invalid_sol, cexs in invalid_zsols]))
+                    for _, cexs in invalid_zsols:
+                        invs = self.get_invs_from_cexs(cexs, inp_ratio)
+                        print('Refined Result: {}'.format(invs))
+                        zsols = self.get_zsols_from_invs(invs)
+                        print('(Unvalidated) Refined Solutions: {}'.format(zsols))
                 else:
-                    maybe_zsols.append(zsol)
-            if valid_zsols:
-                print('Valid Solutions: {}'.format(valid_zsols))
-            elif invalid_zsols:
-                print('Invalid Solutions: {}'.format([(invalid_sol, len(cexs)) for invalid_sol, cexs in invalid_zsols]))
-                for _, cexs in invalid_zsols:
-                    invs = self.get_invs_from_cexs(cexs, inp_ratio)
-                    print('Refined Result: {}'.format(invs))
-                    zsols = self.get_zsols_from_invs(invs)
-                    print('(Unvalidated) Refined Solutions: {}'.format(zsols))
-            else:
-                print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
+                    print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
+                iters = iters + 1
 
     def validate(self, zgt, zsol):
         tasks = []

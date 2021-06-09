@@ -8,6 +8,7 @@ BV_SIZE = 32
 USE_TCS = False
 
 GROUND_TRUTH = None
+REFINEMENT_ITERS = 5
 
 MAIN_TRACE_NAME = "main"
 MBA_NAME = "mba"
