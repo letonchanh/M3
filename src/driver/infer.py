@@ -187,10 +187,10 @@ class DInfer(metaclass=ABCMeta):
         if config.GROUND_TRUTH:
             zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
             valid_zsols = []
+            maybe_zsols = []
             iters = 0
             while unvalidated_zsols and not valid_zsols and iters < config.REFINEMENT_ITERS:
                 invalid_zsols = []
-                maybe_zsols = []
                 for zsol in unvalidated_zsols:
                     r, cex = self.validate(zgt, zsol)
                     if r:
@@ -212,9 +212,12 @@ class DInfer(metaclass=ABCMeta):
                         refined_zsols.discard(invalid_zsol)
                     print('(Unvalidated) Refined Solutions: {}'.format(refined_zsols))
                     unvalidated_zsols = refined_zsols
-                else:
-                    print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
                 iters = iters + 1
+            if not valid_zsols: 
+                if maybe_zsols:
+                    print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
+                else:
+                    print('No solution')
 
     def validate(self, zgt, zsol):
         tasks = []
