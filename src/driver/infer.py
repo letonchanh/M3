@@ -151,7 +151,7 @@ class DInfer(metaclass=ABCMeta):
     def get_zsols_from_invs(self, invs):
         rss = (inv.inv.solve(mba_var) for inv in invs)
         sols = set([r.rhs() for rs in rss for r in rs])
-        zsols = [Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols]
+        zsols = set([Miscs.parse_to_bv(str(sol), config.BV_SIZE) for sol in sols])
         return zsols
 
     def fv(self, mba_inp):
@@ -181,17 +181,17 @@ class DInfer(metaclass=ABCMeta):
     def run(self, mba_inp):
         self.setup(mba_inp)
         invs, inp_ratio = self.get_invs()
-        zsols = self.get_zsols_from_invs(invs)
-        print('(Unvalidated) Solutions: {}'.format(zsols))
+        unvalidated_zsols = self.get_zsols_from_invs(invs)
+        print('(Unvalidated) Solutions: {}'.format(unvalidated_zsols))
 
         if config.GROUND_TRUTH:
             zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
             valid_zsols = []
-            invalid_zsols = []
-            maybe_zsols = []
             iters = 0
-            while zsols and not valid_zsols and iters < config.REFINEMENT_ITERS:
-                for zsol in zsols:
+            while unvalidated_zsols and not valid_zsols and iters < config.REFINEMENT_ITERS:
+                invalid_zsols = []
+                maybe_zsols = []
+                for zsol in unvalidated_zsols:
                     r, cex = self.validate(zgt, zsol)
                     if r:
                         valid_zsols.append(zsol)
@@ -203,11 +203,15 @@ class DInfer(metaclass=ABCMeta):
                     print('Valid Solutions: {}'.format(valid_zsols))
                 elif invalid_zsols:
                     print('Invalid Solutions: {}'.format([(invalid_sol, len(cexs)) for invalid_sol, cexs in invalid_zsols]))
+                    refined_zsols = set()
                     for _, cexs in invalid_zsols:
                         invs = self.get_invs_from_cexs(cexs, inp_ratio)
                         print('Refined Result: {}'.format(invs))
-                        zsols = self.get_zsols_from_invs(invs)
-                        print('(Unvalidated) Refined Solutions: {}'.format(zsols))
+                        refined_zsols.update(self.get_zsols_from_invs(invs))
+                    for invalid_zsol, _ in invalid_zsols:
+                        refined_zsols.discard(invalid_zsol)
+                    print('(Unvalidated) Refined Solutions: {}'.format(refined_zsols))
+                    unvalidated_zsols = refined_zsols
                 else:
                     print('Maybe Solutions (No cex found): {}'.format(maybe_zsols))
                 iters = iters + 1
