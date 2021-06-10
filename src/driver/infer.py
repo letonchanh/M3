@@ -186,19 +186,19 @@ class DInfer(metaclass=ABCMeta):
 
         if config.GROUND_TRUTH:
             zgt = Miscs.parse_to_bv(config.GROUND_TRUTH, config.BV_SIZE)
-            valid_zsols = []
-            maybe_zsols = []
+            valid_zsols = set()
+            maybe_zsols = set()
             iters = 0
             while unvalidated_zsols and not valid_zsols and iters < config.REFINEMENT_ITERS:
                 invalid_zsols = []
                 for zsol in unvalidated_zsols:
                     r, cex = self.validate(zgt, zsol)
                     if r:
-                        valid_zsols.append(zsol)
+                        valid_zsols.add(zsol)
                     elif cex:
                         invalid_zsols.append((zsol, cex))
                     else:
-                        maybe_zsols.append(zsol)
+                        maybe_zsols.add(zsol)
                 if valid_zsols:
                     print('Valid Solutions: {}'.format(valid_zsols))
                 elif invalid_zsols:
@@ -250,8 +250,8 @@ class DInfer(metaclass=ABCMeta):
     def static_validate(self, zgt, zsol):
         # z3.set_param("timeout", 10000) 
         # solver = z3.Solver()
-        # solver = z3.TryFor(z3.Tactic('qfbv'), 10000).solver()
-        solver = z3.Tactic('qfbv').solver()
+        solver = z3.TryFor(z3.Tactic('qfbv'), 10000).solver()
+        # solver = z3.Tactic('qfbv').solver()
         solver.add(zsol != zgt)
         res = solver.check()
         if res == z3.unsat:
