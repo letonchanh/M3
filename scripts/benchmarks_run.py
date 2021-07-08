@@ -6,7 +6,7 @@ import subprocess
 import argparse
 # sys.path.append("../tools")
 # import time
-#Arybo tool 
+#Arybo tool
 from arybo.lib import MBA
 from enum import Enum
 
@@ -20,9 +20,9 @@ class Tool(Enum):
 
 def run_command(command):
     try:
-        p = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180.0)
+        p = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=300.0)
     except subprocess.TimeoutExpired as e_timeout:
-        error = "-----Time Out(180s)----\n"
+        error = "-----Time Out(300s)----\n"
         return error.encode('utf-8')
     return p.stdout
 
@@ -40,7 +40,7 @@ def run_m3(datafile, iter, base):
     fw1= open(filetimeout, "w")
     print("#Timed Out MBA Expressions, iteration=%s, range base=%s" % (iter, base), file=fw1)
     linenum = 0
-    with open(datafile, "rt") as fr: 
+    with open(datafile, "rt") as fr:
         for line in fr:
             if "#" not in line:
                 linenum += 1
@@ -85,7 +85,7 @@ def run_sspam(datafile, base):
                 print(res.decode('utf-8'))
                 fw.write(res.decode('utf-8'))
     fr.close()
-        
+
 
 
 def main(tool, fileread, iter_num, bit_num):
