@@ -1,4 +1,4 @@
-# M3
+# M3: An Efficient Deobfuscation of Mixed Boolean Arithmetic (MBA) Expressions Using Dynamic Analysis
 
 ## Setup
 
